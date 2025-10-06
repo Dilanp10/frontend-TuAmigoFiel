@@ -58,8 +58,7 @@ const LoginPage = () => {
         </div>
       </div>
 
-      {/* Botón Volver a clientes */}
-      <div className="max-w-md mx-auto mb-4">
+      <div className="max-w-md  mb-4">
         <Link to="/" className="text-indigo-600 hover:underline mb-4 inline-block">
           ← Volver a clientes
         </Link>
