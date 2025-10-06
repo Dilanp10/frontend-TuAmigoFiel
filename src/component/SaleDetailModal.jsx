@@ -4,6 +4,8 @@ import { format } from 'date-fns';
 export default function SaleDetailModal({ sale, onClose }) {
   if (!sale) return null;
 
+  console.log('🔍 [Modal DEBUG] Venta recibida:', sale); // ← DEBUG
+
   const total = sale.total;
 
   return (
@@ -13,7 +15,7 @@ export default function SaleDetailModal({ sale, onClose }) {
         <div className="p-6">
           <div className="flex items-start justify-between mb-4">
             <div>
-              <h3 className="text-xl font-bold">Venta #{sale.id}</h3>
+              <h3 className="text-xl font-bold">Venta #{sale.id?.slice(-6)}</h3>
               <p className="text-sm text-gray-500">Fecha: {sale.created_at ? format(new Date(sale.created_at), 'dd/MM/yyyy HH:mm') : '-'}</p>
             </div>
             <button onClick={onClose} className="text-gray-500 hover:text-gray-700">✕</button>
@@ -21,27 +23,35 @@ export default function SaleDetailModal({ sale, onClose }) {
 
           <div className="space-y-3">
             {sale.items && sale.items.length > 0 ? (
-              sale.items.map(it => (
-                <div key={it.id} className="flex items-center justify-between border-b py-2">
-                  <div>
-                    <div className="font-medium">
-                      {/* Mostrar nombre de producto o servicio */}
-                      {it.product_nombre || it.service_nombre || 'Item'}
+              sale.items.map((it, index) => {
+                console.log('📦 [Modal DEBUG] Item:', it); // ← DEBUG por item
+                
+                // Usar los campos correctos que vienen del backend
+                const nombre = it.nombre || (it.product?.nombre) || (it.service?.nombre) || 'Item sin nombre';
+                const precioUnitario = it.precio_unitario || it.unit_price || 0;
+                const cantidad = it.qty || 0;
+                const subtotal = it.line_total || (precioUnitario * cantidad);
+
+                return (
+                  <div key={it.id || index} className="flex items-center justify-between border-b py-2">
+                    <div className="flex-1">
+                      <div className="font-medium">{nombre}</div>
+                      <div className="text-xs text-gray-500">
+                        Tipo: {it.tipo || (it.product ? 'Producto' : (it.service ? 'Servicio' : 'N/A'))}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Precio unitario: {Number(precioUnitario).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-500">
-                      {/* Mostrar tipo de item */}
-                      Tipo: {it.product_nombre ? 'Producto' : (it.service_nombre ? 'Servicio' : 'N/A')}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      Precio: {Number(it.price).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
+                    <div className="text-right">
+                      <div className="font-medium">{cantidad} unid.</div>
+                      <div className="text-sm text-gray-600">
+                        {Number(subtotal).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-medium">{it.qty} unid.</div>
-                    <div className="text-sm text-gray-600">{(it.price * it.qty).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</div>
-                  </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <div className="text-sm text-gray-500">Sin items</div>
             )}
@@ -49,7 +59,9 @@ export default function SaleDetailModal({ sale, onClose }) {
 
           <div className="mt-4 flex items-center justify-between">
             <div className="text-sm text-gray-600">Total</div>
-            <div className="text-xl font-bold text-indigo-700">{Number(total).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</div>
+            <div className="text-xl font-bold text-indigo-700">
+              {Number(total).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
+            </div>
           </div>
 
           <div className="mt-4 flex justify-end">

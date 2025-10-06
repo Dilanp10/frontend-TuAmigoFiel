@@ -7,7 +7,7 @@ import { format } from 'date-fns';
 export default function HistorialVentas() {
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState(''); // búsqueda por total o nombre
+  const [searchTerm, setSearchTerm] = useState('');
   const [selected, setSelected] = useState(null);
   const [error, setError] = useState(null);
 
@@ -16,6 +16,7 @@ export default function HistorialVentas() {
     setError(null);
     try {
       const res = await axios.get('/api/sales');
+      console.log('🔄 [FRONTEND DEBUG] Ventas recibidas:', res.data); // ← DEBUG
       setSales(res.data || []);
     } catch (err) {
       console.error('Error cargando ventas', err);
@@ -33,8 +34,8 @@ export default function HistorialVentas() {
     
     return sales.filter(sale => 
       String(sale.total || '').includes(term) ||
-      (sale.items_names && sale.items_names.some(name => 
-        name.toLowerCase().includes(term)
+      (sale.items && sale.items.some(item => 
+        item.nombre && item.nombre.toLowerCase().includes(term)
       ))
     );
   }, [sales, searchTerm]);
@@ -43,6 +44,7 @@ export default function HistorialVentas() {
     setLoading(true);
     try {
       const res = await axios.get(`/api/sales/${saleId}`);
+      console.log('🔍 [FRONTEND DEBUG] Detalle venta recibido:', res.data); // ← DEBUG
       setSelected(res.data);
     } catch (err) {
       console.error('Error fetching sale detail', err);
@@ -88,18 +90,21 @@ export default function HistorialVentas() {
           ) : (
             <div className="space-y-3">
               {filtered.map(sale => {
-                // items_names es un array de strings que puso el backend (productos o servicios)
-                const firstName = (sale.items_names && sale.items_names.length > 0) ? sale.items_names[0] : null;
-                const remaining = Math.max(0, (sale.items_count || 0) - 1);
+                console.log('📦 [FRONTEND DEBUG] Procesando venta:', sale); // ← DEBUG
+                
+                // Obtener el primer item para mostrar
+                const firstItem = sale.items && sale.items.length > 0 ? sale.items[0] : null;
+                const firstName = firstItem ? firstItem.nombre : 'Sin nombre';
+                const remaining = Math.max(0, (sale.items && sale.items.length) - 1);
 
                 return (
                   <div key={sale.id} className="flex items-center justify-between border-b py-3">
                     <div>
-                      <div className="font-medium">Venta #{sale.id}</div>
+                      <div className="font-medium">Venta #{sale.id.slice(-6)}</div> {/* Mostrar solo últimos 6 chars */}
                       <div className="text-xs text-gray-500">
                         Fecha: {sale.created_at ? format(new Date(sale.created_at), 'dd/MM/yyyy HH:mm') : '-'}
                       </div>
-                      {firstName && (
+                      {firstItem && (
                         <div className="text-sm text-gray-600 mt-1">
                           <span className="font-semibold">{firstName}</span>
                           {remaining > 0 && <span className="text-gray-400 ml-2">+{remaining} más</span>}
