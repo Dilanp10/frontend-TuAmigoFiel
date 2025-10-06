@@ -4,8 +4,6 @@ import { format } from 'date-fns';
 export default function SaleDetailModal({ sale, onClose }) {
   if (!sale) return null;
 
-  console.log('🔍 [Modal DEBUG] Venta recibida:', sale); // ← DEBUG
-
   const total = sale.total;
 
   return (
@@ -24,8 +22,6 @@ export default function SaleDetailModal({ sale, onClose }) {
           <div className="space-y-3">
             {sale.items && sale.items.length > 0 ? (
               sale.items.map((it, index) => {
-                console.log('📦 [Modal DEBUG] Item:', it); // ← DEBUG por item
-                
                 // Usar los campos correctos que vienen del backend
                 const nombre = it.nombre || (it.product?.nombre) || (it.service?.nombre) || 'Item sin nombre';
                 const precioUnitario = it.precio_unitario || it.unit_price || 0;
