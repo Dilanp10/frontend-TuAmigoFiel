@@ -1,7 +1,7 @@
 // src/pages/LoginPage.jsx
 import React, { useState, useEffect } from 'react';
 import axios from '../lib/axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { LockClosedIcon, UserIcon } from '@heroicons/react/24/solid';
 import logo from '../imagen/logo.jpeg';
 
@@ -56,6 +56,13 @@ const LoginPage = () => {
             <span className="text-indigo-700">TU AMIGO FIEL</span>
           </h1>
         </div>
+      </div>
+
+      {/* Botón Volver a clientes */}
+      <div className="max-w-md mx-auto mb-4">
+        <Link to="/" className="text-indigo-600 hover:underline mb-4 inline-block">
+          ← Volver a clientes
+        </Link>
       </div>
 
       {/* Formulario */}
