@@ -1,4 +1,3 @@
-// src/pages/CustomerAccountPage.jsx
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from '../lib/axios';
@@ -181,7 +180,7 @@ export default function CustomerAccountPage() {
                       <div className="flex-1">
                         <div className="font-medium text-lg">Venta #{s.id}</div>
                         <div className="text-sm text-gray-600">
-                          {s.items_count ? `${s.items_count} items` : 'Sin items especificados'}
+                          {s.items && s.items.length > 0 ? `${s.items.length} items` : 'Sin items especificados'}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
                           <span className="font-medium">Total:</span> {Number(s.total).toLocaleString('es-AR', { style:'currency', currency:'ARS' })}
@@ -286,17 +285,25 @@ export default function CustomerAccountPage() {
             <div className="mb-4">
               <h4 className="font-semibold mb-2">Items</h4>
               <ul className="space-y-2">
-                {saleDetail.items.map(it => (
-                  <li key={it.id} className="p-2 bg-gray-50 rounded border">
-                    <div className="font-medium">{it.display_name}</div>
-                    <div className="text-sm text-gray-600">
-                      {it.qty} x {Number(it.price).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
-                    </div>
-                    <div className="text-sm text-gray-800 font-semibold">
-                      Subtotal: {Number(it.subtotal).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
-                    </div>
-                  </li>
-                ))}
+                {saleDetail.items && saleDetail.items.map((it, index) => {
+                  // Usar los campos correctos que vienen del backend
+                  const nombre = it.nombre || 'Item sin nombre';
+                  const precioUnitario = it.precio_unitario || it.unit_price || 0;
+                  const cantidad = it.qty || 0;
+                  const subtotal = it.line_total || (precioUnitario * cantidad);
+
+                  return (
+                    <li key={it.id || index} className="p-2 bg-gray-50 rounded border">
+                      <div className="font-medium">{nombre}</div>
+                      <div className="text-sm text-gray-600">
+                        {cantidad} x {Number(precioUnitario).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
+                      </div>
+                      <div className="text-sm text-gray-800 font-semibold">
+                        Subtotal: {Number(subtotal).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
 
