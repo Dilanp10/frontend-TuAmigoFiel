@@ -5,11 +5,7 @@ import { format, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
 
 /**
- * ReportsPage (versión simplificada)
- * - Se eliminaron las gráficas SVG y se reemplazaron por cards y tablas más legibles
- * - Resumen claro: Totales, promedio, mejor/peor mes
- * - Cambio mes-a-mes con flechas y porcentajes
- * - Export CSV conservado
+ * ReportsPage (versión mejorada con debugging)
  */
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -20,7 +16,7 @@ const sixMonthsAgoISO = () => {
 };
 
 const formatCurrency = (v) => {
-  if (v == null) return '-';
+  if (v == null || v === 0) return '$0';
   return Number(v).toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 2 });
 };
 
@@ -46,23 +42,95 @@ export default function ReportsPage() {
   const [salesData, setSalesData] = useState([]);
   const [profitData, setProfitData] = useState([]);
   const [error, setError] = useState(null);
+  const [debugInfo, setDebugInfo] = useState(null);
 
-  // fetch reports
+  // fetch reports con mejor debugging
   const fetchReports = async () => {
     setLoading(true);
     setError(null);
+    setDebugInfo(null);
+    
     try {
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const [salesRes, profitRes] = await Promise.all([
-        axios.get('/api/reports/sales-by-month', { params: { from, to }, headers }),
-        axios.get('/api/reports/profit-by-month', { params: { from, to }, headers }),
-      ]);
-      setSalesData(Array.isArray(salesRes.data?.data) ? salesRes.data.data : []);
-      setProfitData(Array.isArray(profitRes.data?.data) ? profitRes.data.data : []);
+      
+      console.log('🔄 [FRONTEND] Iniciando fetchReports...');
+      console.log('📅 [FRONTEND] Parámetros:', { from, to });
+      console.log('🔑 [FRONTEND] Token presente:', !!token);
+
+      const startTime = Date.now();
+      
+      // Hacer las peticiones secuencialmente para mejor debug
+      console.log('📊 [FRONTEND] Solicitando sales-by-month...');
+      const salesRes = await axios.get('/api/reports/sales-by-month', { 
+        params: { from, to }, 
+        headers,
+        timeout: 20000
+      });
+      
+      console.log('✅ [FRONTEND] Sales response:', salesRes.data);
+      
+      console.log('💰 [FRONTEND] Solicitando profit-by-month...');
+      const profitRes = await axios.get('/api/reports/profit-by-month', { 
+        params: { from, to }, 
+        headers,
+        timeout: 20000
+      });
+      
+      console.log('✅ [FRONTEND] Profit response:', profitRes.data);
+      
+      const responseTime = Date.now() - startTime;
+      
+      // Tu controller devuelve { from, to, data, success }
+      const salesDataArray = Array.isArray(salesRes.data?.data) ? salesRes.data.data : [];
+      const profitDataArray = Array.isArray(profitRes.data?.data) ? profitRes.data.data : [];
+      
+      console.log('📊 [FRONTEND] Datos de ventas procesados:', salesDataArray);
+      console.log('💰 [FRONTEND] Datos de profit procesados:', profitDataArray);
+      
+      setSalesData(salesDataArray);
+      setProfitData(profitDataArray);
+
+      // Info de debug para mostrar al usuario
+      setDebugInfo({
+        responseTime: `${responseTime}ms`,
+        salesCount: salesDataArray.length,
+        profitCount: profitDataArray.length,
+        hasSalesData: salesDataArray.length > 0,
+        hasProfitData: profitDataArray.length > 0,
+        totalSales: salesDataArray.reduce((sum, item) => sum + (item.total_sales || 0), 0),
+        totalProfit: profitDataArray.reduce((sum, item) => sum + (item.profit || 0), 0)
+      });
+
+      if (salesDataArray.length === 0 && profitDataArray.length === 0) {
+        toast.error('No se encontraron datos para el rango seleccionado');
+      } else {
+        const salesMessage = salesDataArray.length > 0 ? `${salesDataArray.length} meses de ventas` : 'Sin datos de ventas';
+        const profitMessage = profitDataArray.length > 0 ? `${profitDataArray.length} meses de profit` : 'Sin datos de profit';
+        toast.success(`Reportes cargados: ${salesMessage}, ${profitMessage}`);
+      }
+
     } catch (err) {
-      console.error('Error cargando reportes', err);
-      setError(err?.response?.data?.message || 'Error cargando reportes');
+      console.error('❌ [FRONTEND] Error en fetchReports:', err);
+      
+      let errorMessage = 'Error cargando reportes';
+      
+      if (err.response) {
+        console.error('📡 [FRONTEND] Error del servidor:', {
+          status: err.response.status,
+          statusText: err.response.statusText,
+          data: err.response.data
+        });
+        errorMessage = err.response.data?.message || `Error ${err.response.status}: ${err.response.statusText}`;
+      } else if (err.request) {
+        console.error('🌐 [FRONTEND] Error de red - no hubo respuesta:', err.request);
+        errorMessage = 'Error de conexión con el servidor';
+      } else {
+        console.error('⚙️ [FRONTEND] Error de configuración:', err.message);
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
       toast.error('No se pudieron cargar los reportes');
     } finally {
       setLoading(false);
@@ -70,6 +138,7 @@ export default function ReportsPage() {
   };
 
   useEffect(() => {
+    console.log('🚀 [FRONTEND] ReportsPage montado, cargando datos...');
     fetchReports();
     // eslint-disable-next-line
   }, []);
@@ -77,7 +146,15 @@ export default function ReportsPage() {
   const onApply = () => {
     if (!from || !to) return toast.error('Seleccioná rango válido');
     if (new Date(from) > new Date(to)) return toast.error('El rango "desde" no puede ser mayor que "hasta"');
+    console.log('🎯 [FRONTEND] Aplicando filtro...');
     fetchReports();
+  };
+
+  const onReset = () => {
+    console.log('🔄 [FRONTEND] Reseteando filtros...');
+    setFrom(sixMonthsAgoISO());
+    setTo(todayISO());
+    // No llamar fetchReports aquí, el useEffect se encargará
   };
 
   // cálculos resumidos
@@ -97,16 +174,15 @@ export default function ReportsPage() {
     return { totalSales, totalOrders, totalItems, totalRevenue, totalCogs, totalProfit, avgPerMonth, bestMonth, worstMonth };
   }, [salesData, profitData]);
 
-  // helper: percent change vs previous month (expects salesData/profitData sorted desc by API)
+  // helper: percent change vs previous month
   const withChange = (arr = [], valueKey) => {
-    // produce ascending-sorted copy by month (to compare previous)
     const copy = [...arr].sort((a, b) => (a.month > b.month ? 1 : -1));
     return copy.map((row, idx) => {
       const prev = idx > 0 ? Number(copy[idx - 1][valueKey] || 0) : null;
       const cur = Number(row[valueKey] || 0);
       const change = (prev === null || prev === 0) ? null : ((cur - prev) / Math.abs(prev)) * 100;
       return { ...row, _changePct: change };
-    }).reverse(); // keep newest first for display (like original tables)
+    }).reverse();
   };
 
   const salesWithChange = useMemo(() => withChange(salesData, 'total_sales'), [salesData]);
@@ -132,6 +208,18 @@ export default function ReportsPage() {
     URL.revokeObjectURL(url);
   };
 
+  const debugState = () => {
+    console.log('🔍 [DEBUG] Estado actual:', {
+      from,
+      to,
+      salesData,
+      profitData,
+      totals,
+      debugInfo
+    });
+    toast.success('Estado guardado en consola');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100">
       <NavbarAdmin />
@@ -148,45 +236,104 @@ export default function ReportsPage() {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 bg-white p-2 rounded-lg shadow">
               <label className="text-xs text-gray-500 mr-1">Desde</label>
-              <input type="date" value={from} onChange={e => setFrom(e.target.value)} className="px-2 py-2 border rounded-md" />
+              <input 
+                type="date" 
+                value={from} 
+                onChange={e => setFrom(e.target.value)} 
+                className="px-2 py-2 border rounded-md" 
+              />
             </div>
 
             <div className="flex items-center gap-2 bg-white p-2 rounded-lg shadow">
               <label className="text-xs text-gray-500 mr-1">Hasta</label>
-              <input type="date" value={to} onChange={e => setTo(e.target.value)} className="px-2 py-2 border rounded-md" />
+              <input 
+                type="date" 
+                value={to} 
+                onChange={e => setTo(e.target.value)} 
+                className="px-2 py-2 border rounded-md" 
+              />
             </div>
 
-            <button onClick={onApply} className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow">Aplicar</button>
-            <button onClick={() => { setFrom(sixMonthsAgoISO()); setTo(todayISO()); fetchReports(); }} className="px-3 py-2 border rounded-lg">Reset</button>
+            <button 
+              onClick={onApply} 
+              disabled={loading}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {loading ? 'Cargando...' : 'Aplicar'}
+            </button>
+            <button 
+              onClick={onReset}
+              className="px-3 py-2 border rounded-lg hover:bg-gray-50"
+            >
+              Reset
+            </button>
           </div>
         </div>
 
-        {loading && <div className="text-center py-8 text-gray-500">Cargando reportes…</div>}
-        {error && <div className="bg-red-50 text-red-700 p-4 rounded mb-4">{error}</div>}
+        {/* Debug info para desarrollo */}
+        {debugInfo && (
+          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium text-blue-800">Info Debug:</span>
+              <button 
+                onClick={debugState}
+                className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded"
+              >
+                Ver Estado
+              </button>
+            </div>
+            <div className="text-xs text-blue-600 mt-1 grid grid-cols-2 gap-2">
+              <span>Tiempo respuesta: {debugInfo.responseTime}</span>
+              <span>Meses ventas: {debugInfo.salesCount}</span>
+              <span>Meses profit: {debugInfo.profitCount}</span>
+              <span>Total ventas: {formatCurrency(debugInfo.totalSales)}</span>
+            </div>
+          </div>
+        )}
+
+        {loading && (
+          <div className="text-center py-8 text-gray-500">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            <div className="mt-2">Cargando reportes…</div>
+          </div>
+        )}
+        
+        {error && (
+          <div className="bg-red-50 text-red-700 p-4 rounded mb-4">
+            <strong>Error:</strong> {error}
+          </div>
+        )}
 
         {/* Resumen superior: tarjetas grandes y legibles */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div className="bg-white p-6 rounded-2xl shadow">
             <div className="text-xs text-gray-500">Ingresos totales</div>
             <div className="text-2xl font-bold text-indigo-700">{formatCurrency(totals.totalSales)}</div>
-            <div className="text-sm text-gray-500 mt-2">Pedidos: <strong>{totals.totalOrders}</strong> · Ítems: <strong>{totals.totalItems}</strong></div>
+            <div className="text-sm text-gray-500 mt-2">
+              Pedidos: <strong>{totals.totalOrders}</strong> · Ítems: <strong>{totals.totalItems}</strong>
+            </div>
           </div>
 
           <div className="bg-white p-6 rounded-2xl shadow">
             <div className="text-xs text-gray-500">Profit total</div>
             <div className="text-2xl font-bold text-green-700">{formatCurrency(totals.totalProfit)}</div>
-            <div className="text-sm text-gray-500 mt-2">COGS: <strong>{formatCurrency(totals.totalCogs)}</strong></div>
+            <div className="text-sm text-gray-500 mt-2">
+              COGS: <strong>{formatCurrency(totals.totalCogs)}</strong>
+            </div>
           </div>
 
           <div className="bg-white p-6 rounded-2xl shadow">
             <div className="text-xs text-gray-500">Promedio mensual</div>
             <div className="text-2xl font-bold text-gray-800">{formatCurrency(totals.avgPerMonth)}</div>
-            <div className="text-sm text-gray-500 mt-2">Mejor mes: <strong>{totals.bestMonth ? monthLabel(totals.bestMonth.month) : '-'}</strong></div>
+            <div className="text-sm text-gray-500 mt-2">
+              Mejor mes: <strong>{totals.bestMonth ? monthLabel(totals.bestMonth.month) : '-'}</strong>
+            </div>
           </div>
         </div>
 
-        
+        {/* Tablas principales */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Tabla: Ventas */}
           <div className="bg-white rounded-2xl shadow p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -194,7 +341,13 @@ export default function ReportsPage() {
                 <p className="text-sm text-gray-500">Incluye órdenes, items y total.</p>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => csvFor('sales')} className="px-3 py-1 border rounded text-sm">Exportar CSV</button>
+                <button 
+                  onClick={() => csvFor('sales')} 
+                  className="px-3 py-1 border rounded text-sm hover:bg-gray-50"
+                  disabled={salesData.length === 0}
+                >
+                  Exportar CSV
+                </button>
               </div>
             </div>
 
@@ -210,13 +363,21 @@ export default function ReportsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {salesWithChange.length === 0 && <tr><td colSpan="5" className="py-6 text-center text-gray-400">Sin datos</td></tr>}
+                  {salesWithChange.length === 0 && (
+                    <tr>
+                      <td colSpan="5" className="py-6 text-center text-gray-400">
+                        {loading ? 'Cargando...' : 'Sin datos de ventas'}
+                      </td>
+                    </tr>
+                  )}
                   {salesWithChange.map(r => (
                     <tr key={r.month} className="border-t">
                       <td className="py-3 pr-4 font-medium">{monthLabel(r.month)}</td>
                       <td className="py-3 pr-4">{r.orders}</td>
                       <td className="py-3 pr-4">{r.total_items}</td>
-                      <td className="py-3 pr-4 font-semibold text-indigo-700">{formatCurrency(r.total_sales)}</td>
+                      <td className="py-3 pr-4 font-semibold text-indigo-700">
+                        {formatCurrency(r.total_sales)}
+                      </td>
                       <td className="py-3 pr-4">
                         {r._changePct == null ? (
                           <span className="text-xs text-gray-400">—</span>
@@ -233,7 +394,7 @@ export default function ReportsPage() {
             </div>
           </div>
 
-          {/* Tablas: Profit */}
+          {/* Tabla: Profit */}
           <div className="bg-white rounded-2xl shadow p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -241,7 +402,13 @@ export default function ReportsPage() {
                 <p className="text-sm text-gray-500">Revenue, COGS y Profit.</p>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => csvFor('profit')} className="px-3 py-1 border rounded text-sm">Exportar CSV</button>
+                <button 
+                  onClick={() => csvFor('profit')} 
+                  className="px-3 py-1 border rounded text-sm hover:bg-gray-50"
+                  disabled={profitData.length === 0}
+                >
+                  Exportar CSV
+                </button>
               </div>
             </div>
 
@@ -257,13 +424,21 @@ export default function ReportsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {profitWithChange.length === 0 && <tr><td colSpan="5" className="py-6 text-center text-gray-400">Sin datos</td></tr>}
+                  {profitWithChange.length === 0 && (
+                    <tr>
+                      <td colSpan="5" className="py-6 text-center text-gray-400">
+                        {loading ? 'Cargando...' : 'Sin datos de ganancias'}
+                      </td>
+                    </tr>
+                  )}
                   {profitWithChange.map(r => (
                     <tr key={r.month} className="border-t">
                       <td className="py-3 pr-4 font-medium">{monthLabel(r.month)}</td>
                       <td className="py-3 pr-4">{formatCurrency(r.revenue)}</td>
                       <td className="py-3 pr-4">{formatCurrency(r.cogs)}</td>
-                      <td className={`py-3 pr-4 font-semibold ${r.profit < 0 ? 'text-red-600' : 'text-green-700'}`}>{formatCurrency(r.profit)}</td>
+                      <td className={`py-3 pr-4 font-semibold ${r.profit < 0 ? 'text-red-600' : 'text-green-700'}`}>
+                        {formatCurrency(r.profit)}
+                      </td>
                       <td className="py-3 pr-4">
                         {r._changePct == null ? (
                           <span className="text-xs text-gray-400">—</span>
@@ -281,9 +456,9 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {/* Resumen final con explicaciones */}
+        {/* Resumen final */}
         <div className="mt-6 bg-white rounded-2xl shadow p-6">
-          <h4 className="text-md font-semibold mb-3 text-gray-700">Resumen</h4>
+          <h4 className="text-md font-semibold mb-3 text-gray-700">Resumen del Período</h4>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="p-4 bg-indigo-50 rounded">
               <div className="text-xs text-gray-500">Ingresos totales</div>
@@ -298,8 +473,6 @@ export default function ReportsPage() {
               <div className="text-xl font-bold text-green-700">{formatCurrency(totals.totalProfit)}</div>
             </div>
           </div>
-
-          
         </div>
       </div>
     </div>
