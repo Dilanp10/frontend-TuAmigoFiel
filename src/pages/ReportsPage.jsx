@@ -4,10 +4,6 @@ import NavbarAdmin from '../component/NavbarAdmin';
 import { format, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
 
-/**
- * ReportsPage (versión mejorada con debugging)
- */
-
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const sixMonthsAgoISO = () => {
   const now = new Date();
@@ -42,91 +38,48 @@ export default function ReportsPage() {
   const [salesData, setSalesData] = useState([]);
   const [profitData, setProfitData] = useState([]);
   const [error, setError] = useState(null);
-  const [debugInfo, setDebugInfo] = useState(null);
 
-  // fetch reports con mejor debugging
   const fetchReports = async () => {
     setLoading(true);
     setError(null);
-    setDebugInfo(null);
     
     try {
       const token = localStorage.getItem('token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      
-      console.log('🔄 [FRONTEND] Iniciando fetchReports...');
-      console.log('📅 [FRONTEND] Parámetros:', { from, to });
-      console.log('🔑 [FRONTEND] Token presente:', !!token);
 
-      const startTime = Date.now();
+      const [salesRes, profitRes] = await Promise.all([
+        axios.get('/api/reports/sales-by-month', { 
+          params: { from, to }, 
+          headers,
+          timeout: 20000
+        }),
+        axios.get('/api/reports/profit-by-month', { 
+          params: { from, to }, 
+          headers,
+          timeout: 20000
+        })
+      ]);
       
-      // Hacer las peticiones secuencialmente para mejor debug
-      console.log('📊 [FRONTEND] Solicitando sales-by-month...');
-      const salesRes = await axios.get('/api/reports/sales-by-month', { 
-        params: { from, to }, 
-        headers,
-        timeout: 20000
-      });
-      
-      console.log('✅ [FRONTEND] Sales response:', salesRes.data);
-      
-      console.log('💰 [FRONTEND] Solicitando profit-by-month...');
-      const profitRes = await axios.get('/api/reports/profit-by-month', { 
-        params: { from, to }, 
-        headers,
-        timeout: 20000
-      });
-      
-      console.log('✅ [FRONTEND] Profit response:', profitRes.data);
-      
-      const responseTime = Date.now() - startTime;
-      
-      // Tu controller devuelve { from, to, data, success }
       const salesDataArray = Array.isArray(salesRes.data?.data) ? salesRes.data.data : [];
       const profitDataArray = Array.isArray(profitRes.data?.data) ? profitRes.data.data : [];
-      
-      console.log('📊 [FRONTEND] Datos de ventas procesados:', salesDataArray);
-      console.log('💰 [FRONTEND] Datos de profit procesados:', profitDataArray);
       
       setSalesData(salesDataArray);
       setProfitData(profitDataArray);
 
-      // Info de debug para mostrar al usuario
-      setDebugInfo({
-        responseTime: `${responseTime}ms`,
-        salesCount: salesDataArray.length,
-        profitCount: profitDataArray.length,
-        hasSalesData: salesDataArray.length > 0,
-        hasProfitData: profitDataArray.length > 0,
-        totalSales: salesDataArray.reduce((sum, item) => sum + (item.total_sales || 0), 0),
-        totalProfit: profitDataArray.reduce((sum, item) => sum + (item.profit || 0), 0)
-      });
-
       if (salesDataArray.length === 0 && profitDataArray.length === 0) {
         toast.error('No se encontraron datos para el rango seleccionado');
       } else {
-        const salesMessage = salesDataArray.length > 0 ? `${salesDataArray.length} meses de ventas` : 'Sin datos de ventas';
-        const profitMessage = profitDataArray.length > 0 ? `${profitDataArray.length} meses de profit` : 'Sin datos de profit';
-        toast.success(`Reportes cargados: ${salesMessage}, ${profitMessage}`);
+        toast.success('Reportes cargados correctamente');
       }
 
     } catch (err) {
-      console.error('❌ [FRONTEND] Error en fetchReports:', err);
-      
       let errorMessage = 'Error cargando reportes';
       
       if (err.response) {
-        console.error('📡 [FRONTEND] Error del servidor:', {
-          status: err.response.status,
-          statusText: err.response.statusText,
-          data: err.response.data
-        });
-        errorMessage = err.response.data?.message || `Error ${err.response.status}: ${err.response.statusText}`;
+        errorMessage = err.response.data?.message || `Error ${err.response.status}`;
       } else if (err.request) {
-        console.error('🌐 [FRONTEND] Error de red - no hubo respuesta:', err.request);
         errorMessage = 'Error de conexión con el servidor';
       } else {
-        console.error('⚙️ [FRONTEND] Error de configuración:', err.message);
         errorMessage = err.message;
       }
       
@@ -138,7 +91,6 @@ export default function ReportsPage() {
   };
 
   useEffect(() => {
-    console.log('🚀 [FRONTEND] ReportsPage montado, cargando datos...');
     fetchReports();
     // eslint-disable-next-line
   }, []);
@@ -146,18 +98,14 @@ export default function ReportsPage() {
   const onApply = () => {
     if (!from || !to) return toast.error('Seleccioná rango válido');
     if (new Date(from) > new Date(to)) return toast.error('El rango "desde" no puede ser mayor que "hasta"');
-    console.log('🎯 [FRONTEND] Aplicando filtro...');
     fetchReports();
   };
 
   const onReset = () => {
-    console.log('🔄 [FRONTEND] Reseteando filtros...');
     setFrom(sixMonthsAgoISO());
     setTo(todayISO());
-    // No llamar fetchReports aquí, el useEffect se encargará
   };
 
-  // cálculos resumidos
   const totals = useMemo(() => {
     const totalSales = salesData.reduce((s, r) => s + Number(r.total_sales || 0), 0);
     const totalOrders = salesData.reduce((s, r) => s + Number(r.orders || 0), 0);
@@ -174,7 +122,6 @@ export default function ReportsPage() {
     return { totalSales, totalOrders, totalItems, totalRevenue, totalCogs, totalProfit, avgPerMonth, bestMonth, worstMonth };
   }, [salesData, profitData]);
 
-  // helper: percent change vs previous month
   const withChange = (arr = [], valueKey) => {
     const copy = [...arr].sort((a, b) => (a.month > b.month ? 1 : -1));
     return copy.map((row, idx) => {
@@ -206,18 +153,6 @@ export default function ReportsPage() {
     a.download = `report_${which}_${from}_to_${to}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-  };
-
-  const debugState = () => {
-    console.log('🔍 [DEBUG] Estado actual:', {
-      from,
-      to,
-      salesData,
-      profitData,
-      totals,
-      debugInfo
-    });
-    toast.success('Estado guardado en consola');
   };
 
   return (
@@ -270,27 +205,6 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {/* Debug info para desarrollo */}
-        {debugInfo && (
-          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-blue-800">Info Debug:</span>
-              <button 
-                onClick={debugState}
-                className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded"
-              >
-                Ver Estado
-              </button>
-            </div>
-            <div className="text-xs text-blue-600 mt-1 grid grid-cols-2 gap-2">
-              <span>Tiempo respuesta: {debugInfo.responseTime}</span>
-              <span>Meses ventas: {debugInfo.salesCount}</span>
-              <span>Meses profit: {debugInfo.profitCount}</span>
-              <span>Total ventas: {formatCurrency(debugInfo.totalSales)}</span>
-            </div>
-          </div>
-        )}
-
         {loading && (
           <div className="text-center py-8 text-gray-500">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
@@ -304,7 +218,6 @@ export default function ReportsPage() {
           </div>
         )}
 
-        {/* Resumen superior: tarjetas grandes y legibles */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div className="bg-white p-6 rounded-2xl shadow">
             <div className="text-xs text-gray-500">Ingresos totales</div>
@@ -331,9 +244,7 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {/* Tablas principales */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Tabla: Ventas */}
           <div className="bg-white rounded-2xl shadow p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -394,7 +305,6 @@ export default function ReportsPage() {
             </div>
           </div>
 
-          {/* Tabla: Profit */}
           <div className="bg-white rounded-2xl shadow p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -456,7 +366,6 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {/* Resumen final */}
         <div className="mt-6 bg-white rounded-2xl shadow p-6">
           <h4 className="text-md font-semibold mb-3 text-gray-700">Resumen del Período</h4>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
