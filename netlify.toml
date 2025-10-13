@@ -1,8 +1,15 @@
-# netlify.toml
 [build]
   command = "npm run build"
   publish = "dist"
 
+# Proxy para llamadas API: /api/* -> backend (evita CORS en el navegador)
+[[redirects]]
+  from = "/api/*"
+  to = "https://backend-tuamigofiel.onrender.com/:splat"
+  status = 200
+  force = false
+
+# Fallback SPA (catch-all)
 [[redirects]]
   from = "/*"
   to = "/index.html"
