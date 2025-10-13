@@ -1,3 +1,4 @@
+// src/pages/ReportsPage.jsx
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from '../lib/axios';
 import NavbarAdmin from '../component/NavbarAdmin';
@@ -159,23 +160,23 @@ export default function ReportsPage() {
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100">
       <NavbarAdmin />
 
-      <div className="max-w-6xl mx-auto p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-extrabold text-gray-800">
+      <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-6">
+          <div className="w-full lg:flex-1">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-800">
               <span className="text-purple-600">Reportes</span> <span className="text-gray-600">— Ventas y Ganancia</span>
             </h1>
             <p className="text-sm text-gray-500 mt-1">Seleccioná rango para ver un resumen claro y fácil de entender.</p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="w-full lg:w-auto flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
             <div className="flex items-center gap-2 bg-white p-2 rounded-lg shadow">
               <label className="text-xs text-gray-500 mr-1">Desde</label>
               <input 
                 type="date" 
                 value={from} 
                 onChange={e => setFrom(e.target.value)} 
-                className="px-2 py-2 border rounded-md" 
+                className="px-2 py-2 border rounded-md"
               />
             </div>
 
@@ -185,23 +186,25 @@ export default function ReportsPage() {
                 type="date" 
                 value={to} 
                 onChange={e => setTo(e.target.value)} 
-                className="px-2 py-2 border rounded-md" 
+                className="px-2 py-2 border rounded-md"
               />
             </div>
 
-            <button 
-              onClick={onApply} 
-              disabled={loading}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 disabled:opacity-50"
-            >
-              {loading ? 'Cargando...' : 'Aplicar'}
-            </button>
-            <button 
-              onClick={onReset}
-              className="px-3 py-2 border rounded-lg hover:bg-gray-50"
-            >
-              Reset
-            </button>
+            <div className="flex gap-2 mt-2 sm:mt-0">
+              <button 
+                onClick={onApply} 
+                disabled={loading}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {loading ? 'Cargando...' : 'Aplicar'}
+              </button>
+              <button 
+                onClick={onReset}
+                className="px-3 py-2 border rounded-lg hover:bg-gray-50"
+              >
+                Reset
+              </button>
+            </div>
           </div>
         </div>
 
@@ -245,11 +248,11 @@ export default function ReportsPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white rounded-2xl shadow p-6">
+          <div className="bg-white rounded-2xl shadow p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-lg font-semibold text-gray-800">Ventas por mes</h3>
-                <p className="text-sm text-gray-500">Incluye órdenes, items y total.</p>
+                <p className="text-sm text-gray-500">Incluye órdenes, ítems y total.</p>
               </div>
               <div className="flex gap-2">
                 <button 
@@ -305,7 +308,7 @@ export default function ReportsPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow p-6">
+          <div className="bg-white rounded-2xl shadow p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-lg font-semibold text-gray-800">Ganancias por mes</h3>
@@ -366,7 +369,7 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        <div className="mt-6 bg-white rounded-2xl shadow p-6">
+        <div className="mt-6 bg-white rounded-2xl shadow p-4 sm:p-6">
           <h4 className="text-md font-semibold mb-3 text-gray-700">Resumen del Período</h4>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="p-4 bg-indigo-50 rounded">

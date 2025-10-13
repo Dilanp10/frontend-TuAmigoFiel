@@ -4,10 +4,16 @@ import axios from '../lib/axios';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import NavbarAdmin from '../component/NavbarAdmin';
+import {
+  TrashIcon,
+  PencilIcon,
+  PhotoIcon,
+  ChevronDownIcon,
+  ChevronUpIcon
+} from '@heroicons/react/24/solid';
 
 /**
- * Definimos las categorías "visibles" (agrupadas) y el mapeo
- * a las categorías reales que pueden existir en la BD.
+ * Categorías agrupadas y mapeo
  */
 const CATEGORIES_GROUPS = {
   'Alimento para Perro': ['Alimento para Perro'],
@@ -33,16 +39,19 @@ export default function AdminPage() {
     imagen: '',
     vencimiento: '',
     stock: '',
-    cost: '', // <-- campo de costo agregado
+    cost: '',
   });
+
   const [marcas, setMarcas] = useState([]);
-  const [productos, setProductos] = useState([]); // productos cargados según categoría+marca
-  const [allProductsCache, setAllProductsCache] = useState([]); // cache local de todos los productos (para filtrar)
+  const [productos, setProductos] = useState([]); // productos filtrados por categoria+marca
+  const [allProductsCache, setAllProductsCache] = useState([]); // cache global
   const [loadingMarcas, setLoadingMarcas] = useState(false);
   const [loadingProductos, setLoadingProductos] = useState(false);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
+  const [loadingDeleteId, setLoadingDeleteId] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [showListMobile, setShowListMobile] = useState(false);
 
   // verificar token al montar
   useEffect(() => {
@@ -51,7 +60,7 @@ export default function AdminPage() {
 
   const authHeader = { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } };
 
-  // Helper: formatea fecha (acepta ISO/Date) a yyyy-mm-dd para input[type=date]
+  // formatea fecha a yyyy-mm-dd
   const formatToInputDate = (val) => {
     if (!val) return '';
     try {
@@ -63,7 +72,7 @@ export default function AdminPage() {
     }
   };
 
-  // Cargar (una vez) todos los productos en cache — lo usamos para filtrar por grupos sin tocar backend
+  // cargar cache global (productos)
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -74,17 +83,18 @@ export default function AdminPage() {
         setAllProductsCache(data);
       } catch (err) {
         console.error('[Admin] Error cargando productos globales:', err);
+        toast.error('No se pudieron cargar los productos (ver consola)');
       }
     })();
     return () => { mounted = false; };
-  }, []); // solo al montar
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Cargar marcas al cambiar categoría (filtramos usando el grupo)
+  // cargar marcas según categoria (filtrado local)
   useEffect(() => {
     const loadMarcas = async () => {
       setLoadingMarcas(true);
       try {
-        // Filtrar localmente según el grupo seleccionado
         const allowed = CATEGORIES_GROUPS[form.categoria] || [];
         const filtered = allProductsCache.filter(p => allowed.includes(p.categoria));
         const uniq = Array.from(new Set(filtered.map(p => p.marca).filter(Boolean)));
@@ -105,6 +115,7 @@ export default function AdminPage() {
         setProductos([]);
       } catch (err) {
         console.error('[Admin] Error cargando marcas:', err);
+        toast.error('Error cargando marcas');
       } finally {
         setLoadingMarcas(false);
       }
@@ -112,19 +123,19 @@ export default function AdminPage() {
     loadMarcas();
   }, [form.categoria, allProductsCache]);
 
-  // Cargar productos al cambiar marca (filtrado local por grupo + marca)
+  // cargar productos al cambiar marca (filtrado local)
   useEffect(() => {
     if (!form.marca) return;
     const loadProductos = async () => {
       setLoadingProductos(true);
       try {
         const allowed = CATEGORIES_GROUPS[form.categoria] || [];
-        // Usamos la cache completa y filtramos
         const filtered = allProductsCache.filter(p => allowed.includes(p.categoria) && p.marca === form.marca);
         setProductos(filtered);
         setForm(f => ({ ...f, productoId: '' }));
       } catch (err) {
         console.error('[Admin] Error cargando productos:', err);
+        toast.error('Error cargando productos de la marca');
       } finally {
         setLoadingProductos(false);
       }
@@ -132,7 +143,7 @@ export default function AdminPage() {
     loadProductos();
   }, [form.marca, form.categoria, allProductsCache]);
 
-  // Precargar datos si selecciona producto existente
+  // precargar datos si selecciona producto existente
   useEffect(() => {
     if (!form.productoId) return;
     const prod = productos.find(p => String(p.id) === String(form.productoId));
@@ -145,9 +156,10 @@ export default function AdminPage() {
         imagen: prod.imagen ?? '',
         vencimiento: formatToInputDate(prod.vencimiento ?? prod.fecha_vencimiento ?? prod.expiry ?? ''),
         stock: prod.stock != null ? String(prod.stock) : '',
-        cost: prod.cost != null ? String(prod.cost) : '', // <- precarga del costo
+        cost: prod.cost != null ? String(prod.cost) : '',
       }));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.productoId, productos]);
 
   const handleChange = e => {
@@ -179,14 +191,12 @@ export default function AdminPage() {
       setLoadingSubmit(false);
       return;
     }
-    // costo
     const costNum = form.cost === '' ? null : parseFloat(form.cost);
     if (form.cost !== '' && Number.isNaN(costNum)) {
       setError('Costo inválido');
       setLoadingSubmit(false);
       return;
     }
-    // vencimiento puede ser vacío o una fecha yyyy-mm-dd
 
     const payload = {
       nombre: form.nombre,
@@ -197,7 +207,7 @@ export default function AdminPage() {
       imagen: form.imagen,
       vencimiento: form.vencimiento || null,
       stock: stockNum,
-      cost: costNum, // <-- enviamos cost al backend
+      cost: costNum,
     };
 
     try {
@@ -209,130 +219,372 @@ export default function AdminPage() {
         toast.success('Producto creado');
       }
 
-      // Actualizar cache local: recargar todos los productos desde backend para mantener consistencia
+      // recargar cache completa
       const res = await axios.get('/api/products', authHeader);
       const data = res.data || [];
       setAllProductsCache(data);
 
       setSuccess(true);
-      setForm({ categoria: categorias[0], marca: '', productoId: '', nombre: '', descripcion: '', precio: '', imagen: '', vencimiento: '', stock: '', cost: '' });
+      setForm({
+        categoria: categorias[0],
+        marca: '',
+        productoId: '',
+        nombre: '',
+        descripcion: '',
+        precio: '',
+        imagen: '',
+        vencimiento: '',
+        stock: '',
+        cost: '',
+      });
       setMarcas([]);
       setProductos([]);
+      setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
       console.error('[Admin] Error guardando producto:', err);
       setError(err.response?.data?.message || 'Error al guardar el producto');
+      toast.error('Error al guardar producto');
     } finally {
       setLoadingSubmit(false);
     }
   };
 
+  const handleDelete = async (id) => {
+    const ok = window.confirm('¿Eliminar este producto? Esta acción no se puede deshacer.');
+    if (!ok) return;
+    setLoadingDeleteId(id);
+    try {
+      await axios.delete(`/api/products/${id}`, authHeader);
+      toast.success('Producto eliminado');
+      // recargar cache
+      const res = await axios.get('/api/products', authHeader);
+      setAllProductsCache(res.data || []);
+    } catch (err) {
+      console.error('[Admin] Error eliminando:', err);
+      toast.error('Error eliminando producto');
+    } finally {
+      setLoadingDeleteId(null);
+    }
+  };
+
+  // Filtrar vista lateral según categoria seleccionada (y marca opcional)
+  const sideFiltered = allProductsCache.filter(p => {
+    const allowed = CATEGORIES_GROUPS[form.categoria] || [];
+    if (!allowed.includes(p.categoria)) return false;
+    if (form.marca && p.marca !== form.marca) return false;
+    return true;
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100">
-      {/* Navbar */}
       <NavbarAdmin />
-      {/* Contenido Principal */}
-      <div className="max-w-4xl mx-auto p-6 bg-white rounded-2xl shadow-lg mt-8">
-        <h2 className="text-3xl font-extrabold text-gray-800 mb-6">Panel Admin de Productos</h2>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Categoría */}
-          <div>
-            <label className="block text-gray-800 font-medium mb-1">Categoría</label>
-            <select name="categoria" value={form.categoria} onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-300">
-              {categorias.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-            </select>
-          </div>
 
-          {/* Marca */}
-          <div>
-            <label className="block text-gray-800 font-medium mb-1">Marca</label>
-            <input name="marca" list="marcasList" value={form.marca} onChange={handleChange}
-              placeholder={loadingMarcas ? 'Cargando marcas…' : 'Escribe o elige una marca'}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-300" />
-            <datalist id="marcasList">
-              {marcas.map(m => <option key={m} value={m} />)}
-            </datalist>
-             <p className="text-sm text-gray-500 mt-1">No es obligatorio, se agrupara con las que no tienen marcas</p>
-
-          </div>
-
-          {/* Producto existente */}
-          {marcas.includes(form.marca) && (
-            <div>
-              <label className="block text-gray-800 font-medium mb-1">Producto (opcional)</label>
-              <select name="productoId" value={form.productoId} onChange={handleChange}
-                disabled={loadingProductos}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-300">
-                <option value="">— Crear nuevo —</option>
-                {productos.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-              </select>
-              {loadingProductos && <p className="text-gray-500 mt-1">Cargando productos…</p>}
+      <div className="max-w-7xl mx-auto px-4 lg:px-8 py-8">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* FORM: ocupa 2/3 en lg */}
+          <div className="lg:w-2/3 bg-white rounded-2xl shadow-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-extrabold text-gray-800">Panel Admin de Productos</h2>
+              <div className="text-sm text-gray-500">Gestioná productos y stock</div>
             </div>
-          )}
 
-          {/* Nombre */}
-          <div>
-            <label className="block text-gray-800 font-medium mb-1">Nombre</label>
-            <input name="nombre" value={form.nombre} onChange={handleChange} placeholder="Nombre del producto"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-300" />
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                  <select
+                    name="categoria"
+                    value={form.categoria}
+                    onChange={handleChange}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-300"
+                  >
+                    {categorias.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Marca</label>
+                  <input
+                    name="marca"
+                    list="marcasList"
+                    value={form.marca}
+                    onChange={handleChange}
+                    placeholder={loadingMarcas ? 'Cargando marcas…' : 'Escribe o elige una marca'}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-300"
+                  />
+                  <datalist id="marcasList">
+                    {marcas.map(m => <option key={m} value={m} />)}
+                  </datalist>
+                  <p className="text-xs text-gray-500 mt-1">No obligatorio — agrupa productos sin marca.</p>
+                </div>
+              </div>
+
+              {marcas.includes(form.marca) && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Producto (opcional)</label>
+                  <select
+                    name="productoId"
+                    value={form.productoId}
+                    onChange={handleChange}
+                    disabled={loadingProductos}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-300"
+                  >
+                    <option value="">— Crear nuevo —</option>
+                    {productos.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                  </select>
+                  {loadingProductos && <div className="text-xs text-gray-500 mt-1">Cargando productos…</div>}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                <input
+                  name="nombre"
+                  value={form.nombre}
+                  onChange={handleChange}
+                  placeholder="Nombre del producto"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-300"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                <textarea
+                  name="descripcion"
+                  value={form.descripcion}
+                  onChange={handleChange}
+                  rows={3}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-300"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Precio</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="precio"
+                    value={form.precio}
+                    onChange={handleChange}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-300"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Costo (por unidad)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    name="cost"
+                    value={form.cost}
+                    onChange={handleChange}
+                    placeholder="Costo (opcional)"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-300"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Stock</label>
+                  <input
+                    type="number"
+                    min="0"
+                    name="stock"
+                    value={form.stock}
+                    onChange={handleChange}
+                    placeholder="Cantidad"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-300"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de vencimiento (opcional)</label>
+                  <input
+                    type="date"
+                    name="vencimiento"
+                    value={form.vencimiento}
+                    onChange={handleChange}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-300"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Dejar vacío si no aplica (ej. accesorios).</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">URL Imagen</label>
+                  <input
+                    name="imagen"
+                    value={form.imagen}
+                    onChange={handleChange}
+                    placeholder="https://..."
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-300"
+                  />
+                </div>
+              </div>
+
+              {/* feedback */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="text-sm">
+                  {error && <span className="text-red-600 font-medium">{error}</span>}
+                  {success && <span className="text-green-600 font-medium">Guardado exitoso</span>}
+                </div>
+
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <button
+                    type="submit"
+                    disabled={loadingSubmit}
+                    className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md disabled:opacity-60 transition"
+                  >
+                    {loadingSubmit ? 'Guardando...' : form.productoId ? 'Actualizar Producto' : 'Crear Producto'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForm({
+                        categoria: categorias[0],
+                        marca: '',
+                        productoId: '',
+                        nombre: '',
+                        descripcion: '',
+                        precio: '',
+                        imagen: '',
+                        vencimiento: '',
+                        stock: '',
+                        cost: '',
+                      });
+                      setError(null);
+                      setSuccess(false);
+                    }}
+                    className="w-full sm:w-auto border border-gray-300 py-2 px-4 rounded-lg bg-white"
+                  >
+                    Limpiar
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
 
-          {/* Descripción */}
-          <div>
-            <label className="block text-gray-800 font-medium mb-1">Descripción</label>
-            <textarea name="descripcion" value={form.descripcion} onChange={handleChange} rows={3}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-300" />
-          </div>
+          {/* SIDE: lista de productos - ocupa 1/3 en lg */}
+          <aside className="lg:w-1/3">
+            <div className="bg-white rounded-2xl shadow-md p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-gray-800">Productos ({sideFiltered.length})</h3>
+                <button
+                  className="text-sm text-indigo-600 hidden lg:inline-flex items-center gap-1"
+                  onClick={() => {
+                    setForm(f => ({ ...f, marca: '', productoId: '' }));
+                    // collapse/expand mobile list feedback
+                    setShowListMobile(s => !s);
+                  }}
+                >
+                  Limpiar filtros
+                </button>
+              </div>
 
-          {/* Precio */}
-          <div>
-            <label className="block text-gray-800 font-medium mb-1">Precio</label>
-            <input type="number" step="0.01" name="precio" value={form.precio} onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-300" />
-          </div>
+              {/* Mobile toggle */}
+              <div className="lg:hidden mb-3">
+                <button
+                  className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 rounded-md"
+                  onClick={() => setShowListMobile(s => !s)}
+                >
+                  <span className="text-sm font-medium">Ver productos</span>
+                  {showListMobile ? <ChevronUpIcon className="w-5 h-5" /> : <ChevronDownIcon className="w-5 h-5" />}
+                </button>
+              </div>
 
-          {/* Costo */}
-          <div>
-            <label className="block text-gray-800 font-medium mb-1">Precio de Costo (por unidad)</label>
-            <input type="number" step="0.01" min="0" name="cost" value={form.cost} onChange={handleChange}
-              placeholder="Costo de adquisición por unidad (opcional)"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-300" />
-            <p className="text-sm text-gray-500 mt-1">Este valor se usa para calcular la ganancia (COGS) en reportes. si no pones nada lo tomaremos como 0</p>
-          </div>
+              <div className={`space-y-3 ${!showListMobile && 'hidden lg:block'}`}>
+                {sideFiltered.length === 0 ? (
+                  <div className="text-sm text-gray-500 p-3">No hay productos con los filtros actuales.</div>
+                ) : (
+                  sideFiltered.slice(0, 50).map(p => (
+                    <div key={p.id} className="flex items-center gap-3 p-2 rounded-lg border hover:shadow-sm transition">
+                      <div className="w-14 h-14 rounded-md bg-gray-100 flex items-center justify-center overflow-hidden">
+                        {p.imagen ? (
+                          // imagen pequeña
+                          // eslint-disable-next-line jsx-a11y/img-redundant-alt
+                          <img src={p.imagen} alt={`imagen ${p.nombre}`} className="w-full h-full object-cover" />
+                        ) : (
+                          <PhotoIcon className="w-6 h-6 text-gray-400" />
+                        )}
+                      </div>
 
-          {/* Stock */}
-          <div>
-            <label className="block text-gray-800 font-medium mb-1">Stock</label>
-            <input type="number" min="0" name="stock" value={form.stock} onChange={handleChange}
-              placeholder="Cantidad en stock"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-300" />
-          </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-gray-800 truncate">{p.nombre}</div>
+                        <div className="text-xs text-gray-500 truncate">{p.marca ?? '—'}</div>
+                        <div className="text-sm text-indigo-600 mt-1">{p.precio != null ? `$ ${p.precio}` : 'Sin precio'}</div>
+                      </div>
 
-          {/* Fecha de vencimiento */}
-          <div>
-            <label className="block text-gray-800 font-medium mb-1">Fecha de vencimiento (opcional)</label>
-            <input type="date" name="vencimiento" value={form.vencimiento} onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-300" />
-            <p className="text-sm text-gray-500 mt-1">Dejar vacío si no aplica (ej. accesorios).</p>
-          </div>
+                      <div className="flex flex-col items-end gap-2">
+                        <button
+                          onClick={() => {
+                            // cargar al form para editar
+                            setForm(f => ({
+                              ...f,
+                              categoria: categorias.find(c => (CATEGORIES_GROUPS[c] || []).includes(p.categoria)) || f.categoria,
+                              marca: p.marca || '',
+                              productoId: p.id,
+                              nombre: p.nombre ?? '',
+                              descripcion: p.descripcion ?? '',
+                              precio: p.precio ?? '',
+                              imagen: p.imagen ?? '',
+                              vencimiento: formatToInputDate(p.vencimiento ?? p.fecha_vencimiento ?? p.expiry ?? ''),
+                              stock: p.stock != null ? String(p.stock) : '',
+                              cost: p.cost != null ? String(p.cost) : '',
+                            }));
+                            // ensure marcas + productos state reflect change
+                          }}
+                          title="Editar"
+                          className="p-2 rounded-md bg-yellow-50 hover:bg-yellow-100"
+                        >
+                          <PencilIcon className="w-4 h-4 text-yellow-600" />
+                        </button>
 
-          {/* URL Imagen */}
-          <div>
-            <label className="block text-gray-800 font-medium mb-1">URL Imagen</label>
-            <input name="imagen" value={form.imagen} onChange={handleChange} placeholder="https://..."
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-300" />
-          </div>
+                        <button
+                          onClick={() => handleDelete(p.id)}
+                          disabled={loadingDeleteId === p.id}
+                          title="Eliminar"
+                          className="p-2 rounded-md bg-red-50 hover:bg-red-100"
+                        >
+                          {loadingDeleteId === p.id ? (
+                            <svg className="animate-spin h-4 w-4 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                            </svg>
+                          ) : (
+                            <TrashIcon className="w-4 h-4 text-red-600" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
 
-          {/* Feedback */}
-          {error && <p className="text-red-600 font-medium">{error}</p>}
-          {success && <p className="text-green-600 font-medium">Guardado exitoso</p>}
+              {/* "Ver más" / mobile hint */}
+              {sideFiltered.length > 50 && (
+                <div className="text-xs text-gray-500 mt-2">Mostrando 50 primeros resultados. Filtra por marca para ver menos.</div>
+              )}
+            </div>
 
-          {/* Submit */}
-          <button type="submit" disabled={loadingSubmit}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg shadow-md disabled:opacity-50 transition">
-            {loadingSubmit ? 'Guardando...' : form.productoId ? 'Actualizar Producto' : 'Crear Producto'}
-          </button>
-        </form>
+            {/* Small stats card */}
+            <div className="mt-4 bg-white rounded-2xl shadow-md p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-xs text-gray-500">Total productos</div>
+                  <div className="text-xl font-semibold text-gray-800">{allProductsCache.length}</div>
+                </div>
+
+                <div className="text-right">
+                  <div className="text-xs text-gray-500">Categorias</div>
+                  <div className="text-xl font-semibold text-indigo-600">{categorias.length}</div>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
       </div>
     </div>
   );

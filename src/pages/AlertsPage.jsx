@@ -41,6 +41,9 @@ export default function AlertsPage() {
   const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
   const pollingRef = useRef();
 
+  // UI: mobile filters panel toggle
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
   const fetchAlerts = async () => {
     setLoading(true);
     try {
@@ -130,75 +133,86 @@ export default function AlertsPage() {
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100">
       <NavbarAdmin />
 
-      <div className="max-w-6xl mx-auto p-6">
-        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-          <div>
+      <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
+        {/* Header */}
+        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+          <div className="flex-1">
             <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
               <BellAlertIcon className="h-6 w-6 text-indigo-600" />
               Alertas — Inventario
             </h1>
             <p className="text-sm text-gray-500 mt-1">Revisa productos que necesitan atención: vencimientos, stock y otros.</p>
-            <div className="mt-3 flex gap-2 items-center">
-              <div className="text-sm text-gray-600">Actualizado: </div>
-              <div className="text-sm font-medium text-gray-800">
-                {lastUpdatedAt ? format(new Date(lastUpdatedAt), 'dd/MM/yyyy HH:mm:ss') : '—'}
-              </div>
+
+            <div className="mt-3 flex items-center gap-2 text-sm">
+              <div className="text-gray-600">Actualizado:</div>
+              <div className="font-medium text-gray-800">{lastUpdatedAt ? format(new Date(lastUpdatedAt), 'dd/MM/yyyy HH:mm:ss') : '—'}</div>
             </div>
           </div>
 
-          <div className="w-full sm:w-auto flex items-center gap-3">
-            <div className="relative flex items-center bg-white border border-gray-200 rounded-lg px-3 py-1 shadow-sm">
-              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 mr-2" />
-              <input
-                aria-label="Buscar alertas"
-                placeholder="Buscar alertas..."
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                className="w-60 sm:w-80 outline-none text-sm"
-              />
-              <button
-                title="Refrescar"
-                onClick={fetchAlerts}
-                className="ml-2 p-1 rounded hover:bg-gray-50"
-              >
-                <ArrowPathIcon className="h-5 w-5 text-gray-500" />
-              </button>
+          {/* Controls: search + refresh + auto-refresh */}
+          <div className="w-full sm:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div className="flex-1">
+              <div className="relative flex items-center bg-white border border-gray-200 rounded-lg px-3 py-1 shadow-sm">
+                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 mr-2" />
+                <input
+                  aria-label="Buscar alertas"
+                  placeholder="Buscar alertas..."
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  className="w-full outline-none text-sm bg-transparent"
+                />
+                <button
+                  title="Refrescar"
+                  onClick={fetchAlerts}
+                  className="ml-2 p-1 rounded hover:bg-gray-50"
+                >
+                  <ArrowPathIcon className="h-5 w-5 text-gray-500" />
+                </button>
+              </div>
             </div>
 
             <div className="flex items-center gap-2">
               <label className="inline-flex items-center text-sm text-gray-600">
                 <input 
                   type="checkbox" 
-                  className="mr-2" 
+                  className="mr-2"
                   checked={autoRefresh} 
                   onChange={e => setAutoRefresh(e.target.checked)} 
                 />
                 Auto-refresh
               </label>
+
+              {/* mobile filters toggle */}
+              <button
+                onClick={() => setFiltersOpen(s => !s)}
+                className="sm:hidden px-3 py-2 bg-white border rounded-md shadow text-sm"
+                aria-expanded={filtersOpen}
+              >
+                {filtersOpen ? 'Ocultar filtros' : 'Filtros'}
+              </button>
             </div>
           </div>
         </header>
 
-        <div className="flex flex-wrap gap-2 mb-6">
-          {FILTERS.map(f => {
-            const active = filter === f.key;
-            const count = f.key === 'all' ? alerts.length : 
-                         f.key === 'expiring' ? counts.expiring : 
-                         f.key === 'expired' ? counts.expired : counts.low_stock;
-            return (
-              <button
-                key={f.key}
-                onClick={() => setFilter(f.key)}
-                className={`px-3 py-1 rounded-lg text-sm font-medium ${
-                  active ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 border border-gray-200'
-                }`}
-              >
-                {f.label} <span className="ml-2 text-xs font-normal bg-gray-100 px-2 py-0.5 rounded-full">
-                  {count}
-                </span>
-              </button>
-            );
-          })}
+        {/* Filters row (collapsible on mobile) */}
+        <div className={`${filtersOpen ? 'block' : 'hidden'} sm:block mb-4`}>
+          <div className="flex flex-wrap gap-2">
+            {FILTERS.map(f => {
+              const active = filter === f.key;
+              const count = f.key === 'all' ? alerts.length : 
+                           f.key === 'expiring' ? counts.expiring : 
+                           f.key === 'expired' ? counts.expired : counts.low_stock;
+              return (
+                <button
+                  key={f.key}
+                  onClick={() => setFilter(f.key)}
+                  className={`px-3 py-1 rounded-lg text-sm font-medium ${active ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 border border-gray-200'}`}
+                >
+                  {f.label} <span className="ml-2 text-xs font-normal bg-gray-100 px-2 py-0.5 rounded-full">{count}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <main>
@@ -215,7 +229,7 @@ export default function AlertsPage() {
           )}
 
           {!loading && filtered.length === 0 && (
-            <div className="bg-white rounded-lg p-8 shadow text-center text-gray-500">
+            <div className="bg-white rounded-lg p-6 shadow text-center text-gray-500">
               <div className="text-lg font-semibold mb-2">Sin alertas</div>
               <div className="text-sm">No hay alertas que coincidan con ese filtro o búsqueda.</div>
             </div>
@@ -250,29 +264,28 @@ export default function AlertsPage() {
                 <article key={a.id} className="bg-white rounded-lg p-4 shadow flex flex-col sm:flex-row justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-start justify-between gap-4">
-                      <div>
+                      <div className="pr-2">
                         <div className={`inline-block px-2 py-1 rounded text-xs font-semibold ${badge.color}`}>
                           {badge.label}
                         </div>
-                        <h3 className="mt-2 text-lg font-semibold text-gray-800">{a.message}</h3>
+                        <h3 className="mt-2 text-base sm:text-lg font-semibold text-gray-800">{a.message}</h3>
+                        {a.extra && <div className="text-xs text-gray-500 mt-1">{String(a.extra).slice(0, 200)}</div>}
                       </div>
 
-                      <div className="text-right text-sm text-gray-500">
+                      <div className="text-right text-sm text-gray-500 min-w-[120px]">
                         <div>{a.created_at ? format(new Date(a.created_at), 'dd/MM/yyyy HH:mm') : '-'}</div>
                         {vencText && <div className="mt-1 text-xs text-gray-400">Vence: {vencText}</div>}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex-shrink-0 flex flex-col items-end gap-2">
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <button
-                        onClick={() => handleResolve(a.id)}
-                        className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm"
-                      >
-                        Resolver
-                      </button>
-                    </div>
+                  <div className="flex-shrink-0 flex items-start sm:items-center gap-2">
+                    <button
+                      onClick={() => handleResolve(a.id)}
+                      className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm"
+                    >
+                      Resolver
+                    </button>
                   </div>
                 </article>
               );

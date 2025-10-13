@@ -1,3 +1,4 @@
+// src/pages/HistorialVentas.jsx
 import React, { useEffect, useState, useMemo } from 'react';
 import axios from '../lib/axios';
 import NavbarAdmin from '../component/NavbarAdmin';
@@ -55,32 +56,54 @@ export default function HistorialVentas() {
   const handleCloseDetail = () => setSelected(null);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100 font-sans antialiased">
       <NavbarAdmin />
-      <div className="max-w-6xl mx-auto p-6">
+
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        {/* Header */}
         <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-3xl font-extrabold text-gray-800">
+          <div className="flex-1">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-800">
               <span className="text-purple-600">Historial</span> <span className="text-gray-600">— Ventas</span>
             </h1>
-            <p className="text-sm text-gray-500 mt-1">Listado de ventas registradas — busca por total o nombre de producto/servicio.</p>
+            <p className="text-sm text-gray-500 mt-1">
+              Listado de ventas registradas — busca por total o nombre de producto/servicio.
+            </p>
           </div>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <input
-              type="text"
-              placeholder="Buscar por total o nombre..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="px-4 py-2 border rounded-lg w-64"
-            />
+          <div className="w-full sm:w-auto">
+            <div className="flex gap-2 items-center">
+              <input
+                type="text"
+                placeholder="Buscar por total o nombre..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="w-full sm:w-64 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 text-sm"
+                aria-label="Buscar ventas"
+              />
+              <button
+                onClick={fetchSales}
+                className="hidden sm:inline-flex ml-2 px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 text-sm"
+              >
+                Actualizar
+              </button>
+            </div>
+            {/* Mobile action row */}
+            <div className="flex sm:hidden mt-2 gap-2">
+              <button onClick={fetchSales} className="flex-1 px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm">Actualizar</button>
+            </div>
           </div>
         </header>
 
-        {loading && <div className="text-center py-8 text-gray-500">Cargando ventas…</div>}
-        {error && <div className="p-3 bg-red-50 text-red-700 rounded mb-4">{error}</div>}
+        {loading && (
+          <div className="text-center py-8 text-gray-500">Cargando ventas…</div>
+        )}
 
-        <div className="bg-white rounded-2xl shadow p-4">
+        {error && (
+          <div className="p-3 bg-red-50 text-red-700 rounded mb-4">{error}</div>
+        )}
+
+        <section className="bg-white rounded-2xl shadow p-3 sm:p-4">
           {filtered.length === 0 ? (
             <div className="text-center text-gray-500 p-8">
               {searchTerm ? 'No hay ventas que coincidan con la búsqueda' : 'No hay ventas'}
@@ -94,32 +117,56 @@ export default function HistorialVentas() {
                 const remaining = Math.max(0, (sale.items && sale.items.length) - 1);
 
                 return (
-                  <div key={sale.id} className="flex items-center justify-between border-b py-3">
-                    <div>
-                      <div className="font-medium">Venta #{sale.id.slice(-6)}</div>
-                      <div className="text-xs text-gray-500">
-                        Fecha: {sale.created_at ? format(new Date(sale.created_at), 'dd/MM/yyyy HH:mm') : '-'}
-                      </div>
-                      {firstItem && (
-                        <div className="text-sm text-gray-600 mt-1">
-                          <span className="font-semibold">{firstName}</span>
-                          {remaining > 0 && <span className="text-gray-400 ml-2">+{remaining} más</span>}
+                  <article
+                    key={sale.id}
+                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b last:border-b-0 pb-3"
+                    aria-labelledby={`sale-${sale.id}`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3">
+                        <div className="flex-shrink-0">
+                          <div className="h-10 w-10 rounded-md bg-gray-100 flex items-center justify-center text-sm font-semibold text-gray-500 border">
+                            #{String(sale.id).slice(-4)}
+                          </div>
                         </div>
-                      )}
+
+                        <div className="min-w-0">
+                          <div id={`sale-${sale.id}`} className="font-medium text-gray-800 truncate">
+                            Venta #{String(sale.id).slice(-6)}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Fecha: {sale.created_at ? format(new Date(sale.created_at), 'dd/MM/yyyy HH:mm') : '-'}
+                          </div>
+
+                          {firstItem && (
+                            <div className="text-sm text-gray-600 mt-1 truncate">
+                              <span className="font-semibold">{firstName}</span>
+                              {remaining > 0 && <span className="text-gray-400 ml-2">+{remaining} más</span>}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
-                      <div className="text-indigo-700 font-semibold">
+                    <div className="flex items-center gap-3 mt-3 sm:mt-0">
+                      <div className="text-indigo-700 font-semibold text-lg whitespace-nowrap">
                         {Number(sale.total || 0).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
                       </div>
-                      <button onClick={() => openDetail(sale.id)} className="text-sm text-indigo-600 hover:underline">Ver</button>
+
+                      <button
+                        onClick={() => openDetail(sale.id)}
+                        className="px-3 py-2 bg-white border rounded-lg text-indigo-600 hover:bg-indigo-50 text-sm"
+                        aria-label={`Ver detalle venta ${sale.id}`}
+                      >
+                        Ver
+                      </button>
                     </div>
-                  </div>
+                  </article>
                 );
               })}
             </div>
           )}
-        </div>
+        </section>
       </div>
 
       {selected && <SaleDetailModal sale={selected} onClose={handleCloseDetail} />}

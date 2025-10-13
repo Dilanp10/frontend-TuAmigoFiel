@@ -1,3 +1,4 @@
+// src/pages/CustomerAccountPage.jsx
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from '../lib/axios';
@@ -46,6 +47,7 @@ export default function CustomerAccountPage() {
 
   useEffect(() => { 
     fetchData(); 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customerId]);
 
   // TOTAL de todas las ventas
@@ -120,54 +122,77 @@ export default function CustomerAccountPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100 font-sans antialiased">
       <NavbarAdmin />
-      <div className="max-w-5xl mx-auto p-6">
-        <Link to="/cuentas" className="text-indigo-600 hover:underline mb-4 inline-block">
-          ← Volver a clientes
-        </Link>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="mb-4">
+          <Link to="/cuentas" className="text-indigo-600 hover:underline inline-flex items-center gap-2">
+            ← Volver a clientes
+          </Link>
+        </div>
         
-        <h1 className="text-2xl font-bold text-gray-800 mb-4">Cuenta del cliente</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">Cuenta del cliente</h1>
 
-        {loading && <div className="text-gray-500">Cargando...</div>}
+        {loading && (
+          <div className="text-gray-500 py-6">Cargando...</div>
+        )}
 
         {!loading && customer && (
           <>
             {/* Info del Cliente */}
-            <div className="bg-white p-6 rounded-2xl shadow mb-6">
-              <div className="flex items-center justify-between">
+            <div className="bg-white p-4 sm:p-6 rounded-2xl shadow mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <h2 className="text-xl font-semibold">{customer.nombre}</h2>
-                  <div className="text-sm text-gray-500">{customer.email} · {customer.telefono}</div>
+                  <h2 className="text-lg sm:text-xl font-semibold">{customer.nombre}</h2>
+                  <div className="text-sm text-gray-500 mt-1">{customer.email} · {customer.telefono}</div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={fetchData}
+                    className="px-3 py-2 bg-white border rounded-md text-sm hover:bg-gray-50"
+                  >
+                    Actualizar
+                  </button>
+                  <button
+                    onClick={() => { setShowPaymentModal(false); setSelectedSale(null); setShowFullPaymentModal(false); }}
+                    className="px-3 py-2 bg-indigo-600 text-white rounded-md text-sm hidden sm:inline-flex"
+                  >
+                    {/* espacio para acciones futuras */}
+                    Acciones
+                  </button>
                 </div>
               </div>
             </div>
 
             {/* Total de Cuenta */}
-            <div className="bg-white p-6 rounded-2xl shadow mb-6">
-              <div className="flex items-center justify-between">
+            <div className="bg-white p-4 sm:p-6 rounded-2xl shadow mb-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">Total de la Cuenta</h3>
-                  <div className="text-3xl font-bold text-blue-600">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-1">Total de la Cuenta</h3>
+                  <div className="text-2xl sm:text-3xl font-bold text-blue-600">
                     {Number(totalCuenta).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Suma total de todas las ventas
-                  </p>
+                  <p className="text-sm text-gray-500 mt-1">Suma total de todas las ventas</p>
                 </div>
                 
-                <button 
-                  onClick={openFullPaymentModal}
-                  className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold text-lg"
-                >
-                  💰 Confirmar Pago
-                </button>
+                <div className="flex-shrink-0">
+                  <button 
+                    onClick={openFullPaymentModal}
+                    className="w-full sm:w-auto px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold text-base"
+                  >
+                    💰 Confirmar Pago
+                  </button>
+                </div>
               </div>
             </div>
 
             {/* Historial de Ventas */}
-            <div className="bg-white p-6 rounded-2xl shadow">
-              <h3 className="font-semibold mb-4 text-lg">Historial de Ventas</h3>
+            <div className="bg-white p-4 sm:p-6 rounded-2xl shadow mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-lg">Historial de Ventas</h3>
+                <div className="text-sm text-gray-500">{sales.length} {sales.length === 1 ? 'venta' : 'ventas'}</div>
+              </div>
               
               <div className="space-y-3">
                 {sales.length === 0 ? (
@@ -176,22 +201,42 @@ export default function CustomerAccountPage() {
                   </div>
                 ) : (
                   sales.map(s => (
-                    <div key={s.id} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
-                      <div className="flex-1">
-                        <div className="font-medium text-lg">Venta #{s.id}</div>
-                        <div className="text-sm text-gray-600">
-                          {s.items && s.items.length > 0 ? `${s.items.length} items` : 'Sin items especificados'}
+                    <div key={s.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border rounded-lg bg-gray-50">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <div className="font-medium text-lg truncate">Venta #{String(s.id)}</div>
+                            <div className="text-sm text-gray-600 mt-1">
+                              {s.items && s.items.length > 0 ? `${s.items.length} items` : 'Sin items especificados'}
+                            </div>
+                          </div>
+
+                          <div className="sm:hidden text-sm text-gray-700 mt-2">
+                            <div className="font-semibold">
+                              {Number(s.total).toLocaleString('es-AR', { style:'currency', currency:'ARS' })}
+                            </div>
+                          </div>
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          <span className="font-medium">Total:</span> {Number(s.total).toLocaleString('es-AR', { style:'currency', currency:'ARS' })}
+
+                        <div className="text-xs text-gray-500 mt-2">
+                          <span className="font-medium">Total:</span> <span className="hidden sm:inline">{Number(s.total).toLocaleString('es-AR', { style:'currency', currency:'ARS' })}</span>
+                          <span className="ml-3">Fecha: {s.created_at ? new Date(s.created_at).toLocaleString() : '-'}</span>
                         </div>
                       </div>
-                      <div className="flex gap-2">
+
+                      <div className="flex-shrink-0 flex gap-2 mt-3 sm:mt-0">
                         <button 
                           onClick={() => openSaleDetail(s.id)} 
-                          className="px-4 py-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
+                          className="px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
                         >
                           Ver venta
+                        </button>
+
+                        <button
+                          onClick={() => openPayment(s)}
+                          className="px-3 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700"
+                        >
+                          Registrar pago
                         </button>
                       </div>
                     </div>
@@ -209,57 +254,70 @@ export default function CustomerAccountPage() {
 
       {/* Modal Pago Individual */}
       {showPaymentModal && selectedSale && (
-        <RegisterPaymentModal 
-          sale={selectedSale} 
-          customer={customer} 
-          onClose={() => setShowPaymentModal(false)} 
-          onSaved={onPaymentSaved} 
-        />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowPaymentModal(false)} />
+          <div className="relative w-full max-w-xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div className="p-4 sm:p-6">
+              <RegisterPaymentModal 
+                sale={selectedSale} 
+                customer={customer} 
+                onClose={() => setShowPaymentModal(false)} 
+                onSaved={onPaymentSaved} 
+              />
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Modal Confirmar Pago con Interés */}
       {showFullPaymentModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-2xl shadow-xl w-96">
-            <h3 className="text-lg font-semibold mb-4">Confirmar Pago</h3>
-            
-            <div className="mb-4 p-3 bg-gray-50 rounded">
-              <div className="text-sm text-gray-600">Total de la cuenta:</div>
-              <div className="text-xl font-bold text-blue-600">
-                {Number(totalCuenta).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-auto overflow-hidden">
+            <div className="p-4 sm:p-6">
+              <div className="flex items-start justify-between mb-4">
+                <h3 className="text-lg font-semibold">Confirmar Pago</h3>
+                <button onClick={() => setShowFullPaymentModal(false)} className="text-gray-500 hover:text-gray-700">✕</button>
               </div>
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Interés (%)</label>
-              <input 
-                type="number" 
-                value={interestPercentage} 
-                onChange={e => setInterestPercentage(e.target.value)} 
-                className="w-full border rounded-lg p-2"
-              />
-            </div>
-
-            <div className="mb-4">
-              <div className="text-sm text-gray-600">Monto final:</div>
-              <div className="text-xl font-bold text-green-600">
-                {Number(finalAmount).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
+              
+              <div className="mb-4 p-3 bg-gray-50 rounded">
+                <div className="text-sm text-gray-600">Total de la cuenta:</div>
+                <div className="text-xl font-bold text-blue-600">
+                  {Number(totalCuenta).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
+                </div>
               </div>
-            </div>
 
-            <div className="flex justify-end gap-2">
-              <button 
-                onClick={() => setShowFullPaymentModal(false)}
-                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-              >
-                Cancelar
-              </button>
-              <button 
-                onClick={handleFullPayment}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-              >
-                Confirmar
-              </button>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Interés (%)</label>
+                <input 
+                  type="number" 
+                  value={interestPercentage} 
+                  onChange={e => setInterestPercentage(e.target.value)} 
+                  className="w-full border rounded-lg p-2"
+                  inputMode="decimal"
+                />
+              </div>
+
+              <div className="mb-4">
+                <div className="text-sm text-gray-600">Monto final:</div>
+                <div className="text-xl font-bold text-green-600">
+                  {Number(finalAmount).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <button 
+                  onClick={() => setShowFullPaymentModal(false)}
+                  className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleFullPayment}
+                  className="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                >
+                  Confirmar
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -267,12 +325,15 @@ export default function CustomerAccountPage() {
 
       {/* Modal Detalle de Venta */}
       {showSaleDetail && saleDetail && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-2xl shadow-xl w-[500px] max-h-[80vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4">Detalle de Venta #{saleDetail.id}</h3>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto">
+            <div className="flex items-start justify-between mb-4">
+              <h3 className="text-lg font-semibold">Detalle de Venta #{saleDetail.id}</h3>
+              <button onClick={() => setShowSaleDetail(false)} className="text-gray-500 hover:text-gray-700">✕</button>
+            </div>
             
-            <div className="mb-4">
-              <p><span className="font-medium">Fecha:</span> {new Date(saleDetail.created_at).toLocaleString()}</p>
+            <div className="mb-4 text-sm">
+              <p><span className="font-medium">Fecha:</span> {saleDetail.created_at ? new Date(saleDetail.created_at).toLocaleString() : '-'}</p>
               <p><span className="font-medium">Total:</span> {Number(saleDetail.total).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}</p>
               {saleDetail.on_credit && (
                 <>
@@ -286,19 +347,18 @@ export default function CustomerAccountPage() {
               <h4 className="font-semibold mb-2">Items</h4>
               <ul className="space-y-2">
                 {saleDetail.items && saleDetail.items.map((it, index) => {
-                  // Usar los campos correctos que vienen del backend
                   const nombre = it.nombre || 'Item sin nombre';
                   const precioUnitario = it.precio_unitario || it.unit_price || 0;
                   const cantidad = it.qty || 0;
                   const subtotal = it.line_total || (precioUnitario * cantidad);
 
                   return (
-                    <li key={it.id || index} className="p-2 bg-gray-50 rounded border">
+                    <li key={it.id || index} className="p-3 bg-gray-50 rounded border">
                       <div className="font-medium">{nombre}</div>
                       <div className="text-sm text-gray-600">
                         {cantidad} x {Number(precioUnitario).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
                       </div>
-                      <div className="text-sm text-gray-800 font-semibold">
+                      <div className="text-sm text-gray-800 font-semibold mt-1">
                         Subtotal: {Number(subtotal).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
                       </div>
                     </li>
@@ -310,7 +370,7 @@ export default function CustomerAccountPage() {
             <div className="flex justify-end">
               <button 
                 onClick={() => setShowSaleDetail(false)}
-                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                className="px-3 py-2 bg-gray-200 rounded hover:bg-gray-300"
               >
                 Cerrar
               </button>
@@ -320,8 +380,9 @@ export default function CustomerAccountPage() {
       )}
 
       {loadingDetail && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 text-white">
-          Cargando detalle...
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="bg-black/50 absolute inset-0" />
+          <div className="relative p-4 bg-white rounded-lg shadow">Cargando detalle...</div>
         </div>
       )}
     </div>

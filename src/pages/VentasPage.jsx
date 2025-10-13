@@ -59,49 +59,49 @@ function BrowseModal({ type = 'product', open, onClose, onSelect }) {
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20">
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative w-full max-w-6xl mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden">
-        <div className="p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
+      <div className="relative w-full max-w-5xl mx-4 md:mx-6 bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div className="p-4 md:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
             <div className="flex-1 flex gap-3">
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 placeholder={`Buscar ${type === 'product' ? 'productos' : 'servicios'}`}
-                className="flex-1 px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300"
               />
               <button onClick={handleSearch} className="px-4 py-2 bg-indigo-600 text-white rounded-lg">Buscar</button>
             </div>
             <div className="flex items-center gap-2 ml-auto">
-              <button onClick={onClose} className="px-4 py-2 rounded-lg border">Cerrar</button>
+              <button onClick={onClose} className="px-3 py-2 rounded-lg border">Cerrar</button>
             </div>
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {Array.from({ length: 8 }).map((_, i) => <div key={i} className="animate-pulse bg-gray-100 h-32 rounded-lg" />)}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {Array.from({ length: 8 }).map((_, i) => <div key={i} className="animate-pulse bg-gray-100 h-28 rounded-lg" />)}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {items.length === 0 && <div className="col-span-full text-center text-gray-500 p-8">No se encontraron resultados</div>}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {items.length === 0 && <div className="col-span-full text-center text-gray-500 p-6">No se encontraron resultados</div>}
               {items.map((it) => (
-                <div key={`${type}-${it.id}`} className="p-4 bg-white rounded-2xl shadow hover:shadow-lg transition-shadow border border-transparent hover:border-indigo-50 flex flex-col">
+                <div key={`${type}-${it.id}`} className="p-3 bg-white rounded-2xl shadow hover:shadow-lg transition-shadow border border-transparent hover:border-indigo-50 flex flex-col">
                   <div className="flex-1">
-                    <div className="font-medium text-gray-800">{it.nombre}</div>
+                    <div className="font-medium text-gray-800 text-sm">{it.nombre}</div>
                     <div className="text-xs text-gray-400 mt-1 line-clamp-2">{it.marca || it.descripcion || ''}</div>
                   </div>
                   <div className="mt-3 flex items-center justify-between">
-                    <div className="text-indigo-700 font-semibold">{it.precio != null ? formatCurrency(it.precio) : '-'}</div>
-                    <button onClick={() => onSelect(it)} className="px-3 py-1 bg-purple-600 text-white rounded-lg shadow-sm">Agregar</button>
+                    <div className="text-indigo-700 font-semibold text-sm">{it.precio != null ? formatCurrency(it.precio) : '-'}</div>
+                    <button onClick={() => onSelect(it)} className="px-2 py-1 bg-purple-600 text-white rounded-md text-sm shadow-sm">Agregar</button>
                   </div>
                 </div>
               ))}
             </div>
           )}
 
-          <div className="mt-6 flex items-center justify-between">
+          <div className="mt-4 flex items-center justify-between">
             <div className="text-sm text-gray-500">Página {page + 1}</div>
             <div className="flex gap-2">
               <button disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))} className="px-3 py-1 border rounded">Anterior</button>
@@ -114,7 +114,7 @@ function BrowseModal({ type = 'product', open, onClose, onSelect }) {
   );
 }
 
-/* ---------- VentasPage (mejor distribuida + customers/onCredit) ---------- */
+/* ---------- VentasPage (mejor distribuida + responsive) ---------- */
 export default function VentasPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState('product'); // product | service | both
@@ -135,6 +135,9 @@ export default function VentasPage() {
   const [customers, setCustomers] = useState([]);
   const [customerId, setCustomerId] = useState(null);
   const [onCredit, setOnCredit] = useState(false);
+
+  // UI: mobile toggle for sidebar
+  const [showSidebarMobile, setShowSidebarMobile] = useState(false);
 
   useEffect(() => { loadTop(); fetchCustomers(); }, []); // eslint-disable-line
 
@@ -229,7 +232,7 @@ export default function VentasPage() {
     ];
   }, [q, mode, topProducts, topServices, searchResultsProducts, searchResultsServices, searchMode]);
 
-  /* ---------- Cart logic ---------- */
+  /* ---------- Cart logic (no changes) ---------- */
   const addToCart = (item, qty = 1) => {
     const isProduct = Object.prototype.hasOwnProperty.call(item, 'stock');
     const stock = isProduct ? Number(item.stock || 0) : Infinity;
@@ -267,7 +270,7 @@ export default function VentasPage() {
   const subtotal = useMemo(() => cart.reduce((s, i) => s + (Number(i.precio || 0) * Number(i.qty || 0)), 0), [cart]);
   const itemsCount = useMemo(() => cart.reduce((s, i) => s + Number(i.qty || 0), 0), [cart]);
 
-  /* ---------- Confirm sale ---------- */
+  /* ---------- Confirm sale (no logic changes) ---------- */
   const confirmSale = async () => {
     if (cart.length === 0) { toast.error('El carrito está vacío'); return; }
     if (onCredit && !customerId) { toast.error('Seleccioná un cliente para anotar a cuenta'); return; }
@@ -296,6 +299,8 @@ export default function VentasPage() {
       setOnCredit(false);
       setCustomerId(null);
       loadTop();
+      // close sidebar on mobile for convenience
+      setShowSidebarMobile(false);
     } catch (err) {
       console.error('confirmSale error', err);
       const msg = err?.response?.data?.message || 'Error al procesar venta';
@@ -303,15 +308,13 @@ export default function VentasPage() {
     }
   };
 
-  /* ---------- Customer change handler: al seleccionar cliente -> marcar onCredit ---------- */
+  /* ---------- Customer change handler: al seleccionar cliente -> marcar onCredit (no change) ---------- */
   const handleCustomerChange = (e) => {
     const val = e.target.value || null;
     setCustomerId(val);
-    // Si se selecciona algún cliente, activamos la casilla "Anotar a cuenta"
     if (val) {
       setOnCredit(true);
     } else {
-      // Si se deselecciona (value vacío), desmarcamos
       setOnCredit(false);
     }
   };
@@ -320,21 +323,29 @@ export default function VentasPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100 font-sans antialiased">
       <NavbarAdmin />
-      <div className="max-w-7xl mx-auto p-8">
-        {/* Header con botón de historial (SIN "Nuevo Cliente") */}
-        <div className="mb-6 flex items-start justify-between">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 md:p-8">
+        {/* Header */}
+        <div className="mb-4 flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-extrabold text-gray-800 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-800 tracking-tight">
               <span className="text-purple-600">Ventas</span>
               <span className="text-gray-600"> — Punto de Venta</span>
             </h1>
-            
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex items-center gap-2">
+            {/* Mobile: show/hide sidebar */}
+            <button
+              onClick={() => setShowSidebarMobile(s => !s)}
+              className="sm:hidden px-3 py-2 bg-white border rounded-md shadow text-sm"
+              aria-expanded={showSidebarMobile}
+            >
+              {showSidebarMobile ? 'Ocultar carrito' : 'Ver carrito'}
+            </button>
+
             <button
               onClick={() => navigate('/historialVenta')}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow"
+              className="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow text-sm"
             >
               Ver Historial
             </button>
@@ -342,23 +353,23 @@ export default function VentasPage() {
         </div>
 
         {/* Controls bar */}
-        <div className="mb-6 bg-white rounded-xl shadow p-4 flex flex-col md:flex-row md:items-center gap-4">
-          <div className="flex items-center gap-3">
-            <button onClick={() => setMode('product')} className={`px-4 py-2 rounded-lg ${mode === 'product' ? 'bg-indigo-100 text-indigo-800 font-semibold' : 'bg-transparent text-gray-600'}`}>Productos</button>
-            <button onClick={() => setMode('service')} className={`px-4 py-2 rounded-lg ${mode === 'service' ? 'bg-indigo-100 text-indigo-800 font-semibold' : 'bg-transparent text-gray-600'}`}>Servicios</button>
-            <button onClick={() => setMode('both')} className={`px-4 py-2 rounded-lg ${mode === 'both' ? 'bg-indigo-100 text-indigo-800 font-semibold' : 'bg-transparent text-gray-600'}`}>Ambos</button>
+        <div className="mb-5 bg-white rounded-xl shadow p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex items-center gap-2">
+            <button onClick={() => setMode('product')} className={`px-3 py-2 rounded-lg text-sm ${mode === 'product' ? 'bg-indigo-100 text-indigo-800 font-semibold' : 'bg-transparent text-gray-600'}`}>Productos</button>
+            <button onClick={() => setMode('service')} className={`px-3 py-2 rounded-lg text-sm ${mode === 'service' ? 'bg-indigo-100 text-indigo-800 font-semibold' : 'bg-transparent text-gray-600'}`}>Servicios</button>
+            <button onClick={() => setMode('both')} className={`px-3 py-2 rounded-lg text-sm ${mode === 'both' ? 'bg-indigo-100 text-indigo-800 font-semibold' : 'bg-transparent text-gray-600'}`}>Ambos</button>
           </div>
 
-          <div className="flex-1 flex items-center gap-3">
+          <div className="flex-1 flex items-center gap-2">
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Buscar en vivo... (nombre, marca, descripción)"
-              className="flex-1 px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300"
+              className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 text-sm"
             />
 
-            <div className="flex items-center gap-2 bg-white border rounded-lg px-3 py-2">
-              <label className="text-xs text-gray-500 mr-2">Buscar en</label>
+            <div className="flex items-center gap-2 bg-white border rounded-lg px-2 py-1 text-sm">
+              <label className="text-xs text-gray-500">Buscar en</label>
               <select value={searchMode} onChange={(e) => setSearchMode(e.target.value)} className="text-sm bg-transparent outline-none">
                 <option value="both">Ambos</option>
                 <option value="products">Productos</option>
@@ -366,58 +377,61 @@ export default function VentasPage() {
               </select>
             </div>
 
-            <button onClick={() => setShowBrowse(true)} className="px-4 py-2 bg-purple-600 text-white rounded-lg shadow">Ver más</button>
+            <button onClick={() => setShowBrowse(true)} className="px-3 py-2 bg-purple-600 text-white rounded-lg shadow text-sm">Ver más</button>
           </div>
         </div>
 
-        {/* Content area (main + sidebar) */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main list */}
+        {/* Content area: main + sidebar */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main list (2/3 on lg) */}
           <div className="lg:col-span-2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {(!q || q.trim() === '') && loadingTop && Array.from({ length: 6 }).map((_, i) => <LoadingCard key={`loading-${i}`} />)}
 
               {!q || q.trim() === ''
                 ? (mode === 'product' ? topProducts : (mode === 'service' ? topServices : [...topProducts, ...topServices])).map((it) => (
-                  <div key={`${it.hasOwnProperty('stock') ? 'prod' : 'serv'}-${it.id}`} className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-shadow p-5 flex flex-col">
-                    <div className="flex gap-4">
-                      <div className="w-28 h-28 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border">
+                  <div key={`${it.hasOwnProperty('stock') ? 'prod' : 'serv'}-${it.id}`} className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-shadow p-4 flex flex-col">
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <div className="w-full sm:w-28 h-28 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border">
                         {it.imagen ? <img src={it.imagen} alt={it.nombre} className="w-full h-full object-cover" /> : <div className="text-sm text-gray-400 text-center px-2">{it.nombre.slice(0, 12)}</div>}
                       </div>
                       <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-800">{it.nombre}</h3>
-                        <p className="text-xs text-gray-500 mt-2 line-clamp-2">{it.marca || it.descripcion || ''}</p>
-                        <div className="mt-4 flex items-center gap-3">
+                        <h3 className="text-md sm:text-lg font-semibold text-gray-800">{it.nombre}</h3>
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">{it.marca || it.descripcion || ''}</p>
+                        <div className="mt-3 flex items-center gap-3">
                           <div className="text-indigo-700 font-bold text-lg">{it.precio != null ? formatCurrency(it.precio) : '-'}</div>
                           {it.stock != null && <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${it.stock <= 0 ? 'bg-red-100 text-red-700' : 'bg-green-50 text-green-700'}`}>{it.stock} u.</div>}
                         </div>
                       </div>
                     </div>
-                    <div className="mt-4 flex items-center gap-3 justify-end">
-                      <input type="number" min="1" defaultValue={1} max={it.stock || 9999} className="w-20 px-3 py-2 border rounded-lg" />
-                      <button aria-label={`Agregar ${it.nombre}`} onClick={(e) => { const v = Number(e.currentTarget.previousSibling.value || 1); if (it.stock != null && v > it.stock) { toast.error('Mayor al stock'); return; } addToCart(it, v); }} className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700">Agregar</button>
+
+                    <div className="mt-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 justify-end">
+                      {/* cantidad input and button kept as siblings so DOM logic (previousSibling) remains intact */}
+                      <input type="number" min="1" defaultValue={1} max={it.stock || 9999} className="w-full sm:w-20 px-3 py-2 border rounded-lg" />
+                      <button aria-label={`Agregar ${it.nombre}`} onClick={(e) => { const v = Number(e.currentTarget.previousSibling.value || 1); if (it.stock != null && v > it.stock) { toast.error('Mayor al stock'); return; } addToCart(it, v); }} className="w-full sm:w-auto px-3 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700">Agregar</button>
                     </div>
                   </div>
                 ))
-                : (listItems.length === 0 ? <div key="nores" className="col-span-full bg-white rounded-2xl shadow p-8 text-center text-gray-500">No se encontraron resultados</div>
+                : (listItems.length === 0 ? <div key="nores" className="col-span-full bg-white rounded-2xl shadow p-6 text-center text-gray-500">No se encontraron resultados</div>
                   : listItems.map((it) => (
-                    <div key={`${it.__type}-${it.id}`} className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-shadow p-5 flex flex-col">
-                      <div className="flex gap-4">
-                        <div className="w-28 h-28 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border">
+                    <div key={`${it.__type}-${it.id}`} className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-shadow p-4 flex flex-col">
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <div className="w-full sm:w-28 h-28 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border">
                           {it.imagen ? <img src={it.imagen} alt={it.nombre} className="w-full h-full object-cover" /> : <div className="text-sm text-gray-400 text-center px-2">{it.nombre.slice(0, 12)}</div>}
                         </div>
                         <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-gray-800">{it.nombre}</h3>
-                          <p className="text-xs text-gray-500 mt-2 line-clamp-2">{it.marca || it.descripcion || ''}</p>
-                          <div className="mt-4 flex items-center gap-3">
+                          <h3 className="text-md sm:text-lg font-semibold text-gray-800">{it.nombre}</h3>
+                          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{it.marca || it.descripcion || ''}</p>
+                          <div className="mt-3 flex items-center gap-3">
                             <div className="text-indigo-700 font-bold text-lg">{it.precio != null ? formatCurrency(it.precio) : '-'}</div>
                             {it.stock != null && <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${it.stock <= 0 ? 'bg-red-100 text-red-700' : 'bg-green-50 text-green-700'}`}>{it.stock} u.</div>}
                           </div>
                         </div>
                       </div>
-                      <div className="mt-4 flex items-center gap-3 justify-end">
-                        <input type="number" min="1" defaultValue={1} max={it.stock || 9999} className="w-20 px-3 py-2 border rounded-lg" />
-                        <button onClick={(e) => { const v = Number(e.currentTarget.previousSibling.value || 1); if (it.stock != null && v > it.stock) { toast.error('Mayor al stock'); return; } addToCart(it, v); }} className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700">Agregar</button>
+
+                      <div className="mt-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 justify-end">
+                        <input type="number" min="1" defaultValue={1} max={it.stock || 9999} className="w-full sm:w-20 px-3 py-2 border rounded-lg" />
+                        <button onClick={(e) => { const v = Number(e.currentTarget.previousSibling.value || 1); if (it.stock != null && v > it.stock) { toast.error('Mayor al stock'); return; } addToCart(it, v); }} className="w-full sm:w-auto px-3 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700">Agregar</button>
                       </div>
                     </div>
                   ))
@@ -426,11 +440,11 @@ export default function VentasPage() {
             </div>
           </div>
 
-          {/* Sidebar carrito + opciones (diseño mejorado) */} 
-          <aside className="lg:col-span-1">
-            <div className="bg-white rounded-2xl shadow p-6 sticky top-8 divide-y">
-              <div className="pb-4">
-                <div className="flex items-center justify-between mb-3">
+          {/* Sidebar carrito + opciones */}
+          <aside className={`lg:col-span-1 ${showSidebarMobile ? 'block' : 'hidden lg:block'}`}>
+            <div className="bg-white rounded-2xl shadow p-4 sticky top-4 divide-y">
+              <div className="pb-3">
+                <div className="flex items-center justify-between mb-2">
                   <div>
                     <h2 className="text-lg font-semibold text-gray-800">Carrito</h2>
                     <div className="text-xs text-gray-500 mt-1">{itemsCount} items</div>
@@ -439,9 +453,9 @@ export default function VentasPage() {
                 </div>
 
                 {/* Customer select + onCredit */}
-                <div className="mb-3">
+                <div className="mb-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Cliente</label>
-                  <select value={customerId || ''} onChange={handleCustomerChange} className="w-full px-3 py-2 border rounded-lg">
+                  <select value={customerId || ''} onChange={handleCustomerChange} className="w-full px-3 py-2 border rounded-lg text-sm">
                     <option value="">— Cliente no seleccionado —</option>
                     {customers.map(c => <option key={c.id} value={c.id}>{c.nombre} {c.telefono ? `— ${c.telefono}` : ''}</option>)}
                   </select>
@@ -461,9 +475,9 @@ export default function VentasPage() {
                 </div>
               </div>
 
-              <div className="max-h-64 overflow-auto py-4 space-y-3">
+              <div className="max-h-60 overflow-auto py-3 space-y-3">
                 {cart.length === 0 ? (
-                  <div className="text-sm text-gray-500 p-4 text-center">Carrito vacío. Agregá productos o servicios.</div>
+                  <div className="text-sm text-gray-500 p-3 text-center">Carrito vacío. Agregá productos o servicios.</div>
                 ) : (
                   cart.map((i) => (
                     <div key={i.key} className="flex items-center gap-3">
@@ -489,18 +503,16 @@ export default function VentasPage() {
                 )}
               </div>
 
-              <div className="pt-4">
+              <div className="pt-3">
                 <div className="flex items-center justify-between mb-3">
                   <div className="text-sm text-gray-600">Total</div>
                   <div className="text-lg font-bold text-indigo-700">{formatCurrency(subtotal)}</div>
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={() => setCart([])} className="flex-1 px-4 py-2 border rounded-lg">Vaciar</button>
-                  <button onClick={confirmSale} disabled={cart.length === 0} className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg">Confirmar</button>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button onClick={() => setCart([])} className="flex-1 px-3 py-2 border rounded-lg text-sm">Vaciar</button>
+                  <button onClick={confirmSale} disabled={cart.length === 0} className="flex-1 px-3 py-2 bg-purple-600 text-white rounded-lg text-sm">Confirmar</button>
                 </div>
               </div>
-
-             
             </div>
           </aside>
         </div>

@@ -1,3 +1,4 @@
+// src/pages/ServicesPage.jsx
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from '../lib/axios';
 import toast from 'react-hot-toast';
@@ -162,7 +163,7 @@ export default function ServicesPage() {
     if (form.precio !== '' && (Number.isNaN(Number(form.precio)) || Number(form.precio) < 0)) return 'Precio inválido';
     if (form.duracion_min !== '' && (!Number.isInteger(Number(form.duracion_min)) || Number(form.duracion_min) < 0)) return 'Duración inválida';
     return null;
-    };
+  };
 
   const saveService = async () => {
     const errMsg = validate();
@@ -212,18 +213,18 @@ export default function ServicesPage() {
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100">
       <NavbarAdmin />
 
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         {/* Header */}
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-extrabold text-gray-800">Servicios</h1>
-           
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-800">Servicios</h1>
+            <p className="text-sm text-gray-500 mt-1">Gestioná tus servicios: crear, editar, ordenar y filtrar.</p>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               onClick={openCreate}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow text-sm"
             >
               <PlusIcon className="w-5 h-5" />
               Nuevo servicio
@@ -233,10 +234,10 @@ export default function ServicesPage() {
 
         {/* Toolbar */}
         <div className="bg-white rounded-2xl shadow p-4 mb-6">
-          <div className="flex flex-col md:flex-row gap-3 md:items-center">
-            <div className="flex-1 flex items-center gap-2">
-              <div className="relative flex items-center border border-gray-200 rounded-lg px-3 py-2 w-full md:w-96">
-                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 mr-2" />
+          <div className="flex flex-col md:flex-row md:items-center gap-3">
+            <div className="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <div className="relative flex items-center border border-gray-200 rounded-lg px-3 py-2 w-full sm:max-w-md">
+                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 mr-2 flex-shrink-0" />
                 <input
                   className="w-full outline-none text-sm"
                   placeholder="Buscar por nombre, descripción o categoría…"
@@ -245,7 +246,7 @@ export default function ServicesPage() {
                 />
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <FunnelIcon className="w-5 h-5 text-gray-400" />
                 <select
                   className="border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -268,7 +269,7 @@ export default function ServicesPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 justify-end">
               <ArrowsUpDownIcon className="w-5 h-5 text-gray-400" />
               <select
                 className="border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -291,7 +292,7 @@ export default function ServicesPage() {
 
         {/* Listado */}
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {[1, 2, 3, 4, 5, 6].map(i => (
               <div key={i} className="animate-pulse bg-white rounded-2xl p-5 shadow">
                 <div className="h-5 w-1/2 bg-gray-200 rounded mb-3" />
@@ -302,15 +303,15 @@ export default function ServicesPage() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {filtered.map(svc => {
               const active = typeof svc.activo === 'boolean' ? svc.activo : Boolean(Number(svc.activo));
               return (
                 <div key={svc.id} className="bg-white rounded-2xl shadow p-5 flex flex-col justify-between">
                   <div>
                     <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-800">{svc.nombre}</h3>
+                      <div className="min-w-0">
+                        <h3 className="text-lg font-semibold text-gray-800 truncate">{svc.nombre}</h3>
                         {svc.categoria && <div className="mt-1 text-xs inline-block bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">{svc.categoria}</div>}
                       </div>
                       <div className="text-sm">
@@ -320,7 +321,7 @@ export default function ServicesPage() {
                       </div>
                     </div>
 
-                    {svc.descripcion && <p className="text-gray-600 text-sm mt-3">{svc.descripcion}</p>}
+                    {svc.descripcion && <p className="text-gray-600 text-sm mt-3 line-clamp-3">{svc.descripcion}</p>}
 
                     <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
                       <div className="bg-gray-50 rounded-xl p-3">
@@ -337,18 +338,18 @@ export default function ServicesPage() {
                   <div className="mt-5 flex items-center justify-end gap-2">
                     <button
                       onClick={() => openEdit(svc)}
-                      className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700"
+                      className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 text-sm"
                       title="Editar"
                     >
-                      <PencilSquareIcon className="w-5 h-5" />
+                      <PencilSquareIcon className="w-4 h-4" />
                       Editar
                     </button>
                     <button
                       onClick={() => removeService(svc.id)}
-                      className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white"
+                      className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm"
                       title="Eliminar"
                     >
-                      <TrashIcon className="w-5 h-5" />
+                      <TrashIcon className="w-4 h-4" />
                       Eliminar
                     </button>
                   </div>
@@ -365,7 +366,7 @@ export default function ServicesPage() {
               className="absolute inset-0 bg-black/30"
               onClick={closeDrawer}
             />
-            <div className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl p-6 overflow-y-auto">
+            <div className="absolute right-0 top-0 h-full w-full md:w-full lg:w-[420px] bg-white shadow-2xl p-6 overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-800">
                   {editingId ? 'Editar servicio' : 'Nuevo servicio'}
@@ -385,7 +386,7 @@ export default function ServicesPage() {
                     name="nombre"
                     value={form.nombre}
                     onChange={onChange}
-                    className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-200 outline-none"
+                    className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-200 outline-none text-sm"
                     placeholder="Baño y corte, Paseo, etc."
                   />
                 </div>
@@ -397,12 +398,12 @@ export default function ServicesPage() {
                     value={form.descripcion}
                     onChange={onChange}
                     rows={3}
-                    className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-200 outline-none"
+                    className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-200 outline-none text-sm"
                     placeholder="Detalle del servicio"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Precio</label>
                     <input
@@ -412,7 +413,7 @@ export default function ServicesPage() {
                       min="0"
                       value={form.precio}
                       onChange={onChange}
-                      className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-200 outline-none"
+                      className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-200 outline-none text-sm"
                       placeholder="0.00"
                     />
                   </div>
@@ -424,7 +425,7 @@ export default function ServicesPage() {
                       min="0"
                       value={form.duracion_min}
                       onChange={onChange}
-                      className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-200 outline-none"
+                      className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-200 outline-none text-sm"
                       placeholder="Ej: 45"
                     />
                   </div>
@@ -437,7 +438,7 @@ export default function ServicesPage() {
                     list="servicesCategories"
                     value={form.categoria}
                     onChange={onChange}
-                    className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-200 outline-none"
+                    className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-200 outline-none text-sm"
                     placeholder="Grooming, Paseos, Veterinaria, etc."
                   />
                   <datalist id="servicesCategories">
@@ -449,14 +450,14 @@ export default function ServicesPage() {
               <div className="mt-6 flex items-center justify-end gap-2">
                 <button
                   onClick={closeDrawer}
-                  className="px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50"
+                  className="px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-sm"
                   disabled={saving}
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={saveService}
-                  className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow disabled:opacity-60"
+                  className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow text-sm disabled:opacity-60"
                   disabled={saving}
                 >
                   {saving ? 'Guardando…' : (editingId ? 'Guardar cambios' : 'Crear servicio')}

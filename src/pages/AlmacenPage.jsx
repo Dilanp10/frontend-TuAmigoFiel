@@ -53,6 +53,7 @@ const handleDeleted = (deletedProductId) => {
   // Filtra el producto eliminado del estado
   setProductos(prev => prev.filter(p => p.id !== deletedProductId));
 };
+
 export default function AlmacenPage() {
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -63,6 +64,9 @@ export default function AlmacenPage() {
 
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showModal, setShowModal] = useState(false);
+
+  // UI: mobile filters collapsed
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -97,20 +101,16 @@ export default function AlmacenPage() {
     setProductos(prev => prev.map(p => (p.id === updated.id ? updated : p)));
   };
 
+  // --- Filtered list (sin tocar la lógica) ---
   const filtered = useMemo(() => {
     const qLower = q.trim().toLowerCase();
-    // calcular categorías permitidas según seleccion
     const allowed = getAllowedCategories(categoria); // null => todas
     return productos.filter(p => {
-      // filtro por categoría (si no es "Todas")
       if (allowed) {
-        // permitimos si la categoría del producto coincide con cualquiera de allowed
         const prodCat = p.categoria || '';
         if (!allowed.includes(prodCat)) return false;
       }
-
       if (onlyStockZero && Number(p.stock || 0) > 0) return false;
-
       if (!qLower) return true;
       const hay = [
         p.nombre,
@@ -137,38 +137,69 @@ export default function AlmacenPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100">
       <NavbarAdmin />
-      <div className="max-w-6xl mx-auto p-6">
+      <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
+        {/* Header + mobile filter toggle */}
         <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-3xl font-extrabold text-gray-800">
+          <div className="flex-1">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-800">
               <span className="text-purple-600">Almacén</span> <span className="text-gray-600">— Productos</span>
             </h1>
             <p className="text-sm text-gray-500 mt-1">Lista completa de productos — busca, filtra y revisa stock / vencimientos.</p>
           </div>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              onClick={() => setFiltersOpen(s => !s)}
+              className="sm:hidden px-3 py-2 bg-white border rounded-md shadow text-sm"
+              aria-expanded={filtersOpen}
+              aria-controls="filters-panel"
+            >
+              {filtersOpen ? 'Ocultar filtros' : 'Mostrar filtros'}
+            </button>
+
+            <div className="hidden sm:block">
+              <button
+                onClick={fetchProducts}
+                className="px-3 py-2 bg-indigo-600 text-white rounded-md text-sm shadow"
+              >
+                Actualizar
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* Filters panel: responsive */}
+        <div id="filters-panel" className={`${filtersOpen ? 'block' : 'hidden'} sm:block mb-4`}>
+          <div className="bg-white rounded-xl shadow p-4 flex flex-col sm:flex-row sm:items-center gap-3">
             <input
               type="search"
               placeholder="Buscar producto, marca o descripción..."
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              className="w-full sm:w-80 px-4 py-2 rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-purple-300"
+              className="w-full sm:w-80 px-4 py-2 rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-purple-300 text-sm"
+              aria-label="Buscar productos"
             />
 
             <select
               value={categoria}
               onChange={(e) => setCategoria(e.target.value)}
-              className="px-3 py-2 rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-purple-300"
+              className="w-full sm:w-auto px-3 py-2 rounded-lg border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-purple-300 text-sm"
+              aria-label="Filtrar por categoría"
             >
               {categorias.map(cat => <option key={cat} value={cat}>{cat}</option>)}
             </select>
 
-            <label className="inline-flex items-center text-sm text-gray-700">
-              <input type="checkbox" className="mr-2" checked={onlyStockZero} onChange={e => setOnlyStockZero(e.target.checked)} />
+            <label className="inline-flex items-center text-sm text-gray-700 gap-2">
+              <input type="checkbox" className="h-4 w-4" checked={onlyStockZero} onChange={e => setOnlyStockZero(e.target.checked)} />
               Sin stock
             </label>
+
+            <div className="ml-auto flex gap-2">
+              <button onClick={() => { setQ(''); setCategoria('Todas'); setOnlyStockZero(false); }} className="px-3 py-2 border rounded-md text-sm">Limpiar</button>
+              <button onClick={fetchProducts} className="px-3 py-2 bg-indigo-600 text-white rounded-md text-sm">Actualizar</button>
+            </div>
           </div>
-        </header>
+        </div>
 
         {loading && (
           <div className="text-center py-12 text-gray-500">Cargando productos…</div>
@@ -179,18 +210,18 @@ export default function AlmacenPage() {
         )}
 
         {!loading && filtered.length === 0 && (
-          <div className="p-8 bg-white rounded-xl shadow text-center text-gray-500">No hay productos que coincidan.</div>
+          <div className="p-6 bg-white rounded-xl shadow text-center text-gray-500">No hay productos que coincidan.</div>
         )}
 
-        <main className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <main className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
           {filtered.map(prod => {
             const venc = getVencimientoState(prod.vencimiento || prod.fecha_vencimiento || prod.expiry);
             return (
               <article key={prod.id} className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition p-4 flex flex-col">
-                <div className="flex items-start gap-4">
-                  <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border">
+                <div className="flex flex-col sm:flex-row items-start gap-4">
+                  <div className="w-full sm:w-24 h-40 sm:h-24 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border">
                     {prod.imagen ? (
-                      <img src={prod.imagen} alt={prod.nombre} className="w-full h-full object-cover"/>
+                      <img src={prod.imagen} alt={prod.nombre} className="w-full h-full object-cover" />
                     ) : (
                       <div className="text-sm text-gray-400 px-2 text-center">Sin imagen</div>
                     )}
@@ -199,31 +230,35 @@ export default function AlmacenPage() {
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-800">{prod.nombre}</h3>
                     <p className="text-sm text-gray-500">{prod.marca || '—'}</p>
-                    <div className="mt-2 flex items-center gap-2">
+
+                    <div className="mt-3 flex items-center gap-2 flex-wrap">
                       <div className="text-indigo-700 font-bold text-lg">{formatCurrency(prod.precio)}</div>
                       <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${venc.color}`}>{venc.label}</div>
                     </div>
 
-                    <p className="text-sm text-gray-500 mt-2 line-clamp-2">{prod.descripcion || ''}</p>
+                    <p className="text-sm text-gray-500 mt-2 line-clamp-3">{prod.descripcion || ''}</p>
                   </div>
                 </div>
 
-                <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
-                  <div>
+                <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="text-sm text-gray-600">
                     <span className="font-medium text-gray-800">Categoría:</span> {prod.categoria || '—'}
                   </div>
-                  <div>
-                    <span className={`font-semibold ${Number(prod.stock || 0) === 0 ? 'text-red-600' : 'text-gray-800'}`}>
-                      {prod.stock != null ? prod.stock : '—'}
-                    </span>
-                    <span className="text-gray-400 ml-1">unid.</span>
-                  </div>
-                </div>
 
-                <div className="mt-4 flex items-center justify-between">
-                  <button onClick={() => openModal(prod)} className="text-sm text-indigo-600 hover:underline">Ver detalle</button>
-                  <div className="text-xs text-gray-400">
-                    {prod.created_at ? `Ingresado: ${format(new Date(prod.created_at), 'dd/MM/yyyy')}` : ''}
+                  <div className="flex items-center gap-3">
+                    <div className="text-sm">
+                      <span className={`font-semibold ${Number(prod.stock || 0) === 0 ? 'text-red-600' : 'text-gray-800'}`}>
+                        {prod.stock != null ? prod.stock : '—'}
+                      </span>
+                      <span className="text-gray-400 ml-1">unid.</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => openModal(prod)} className="text-sm text-indigo-600 hover:underline">Ver detalle</button>
+                      <div className="text-xs text-gray-400">
+                        {prod.created_at ? `Ingresado: ${format(new Date(prod.created_at), 'dd/MM/yyyy')}` : ''}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </article>
@@ -237,7 +272,7 @@ export default function AlmacenPage() {
           product={selectedProduct}
           onClose={handleCloseModal}
           onSaved={handleSaved}
-          onDeleted={handleDeleted} 
+          onDeleted={handleDeleted}
         />
       )}
     </div>
