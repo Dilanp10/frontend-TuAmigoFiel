@@ -56,87 +56,43 @@ const Home = () => {
       )}
 
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md shadow-sm py-3 border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img
-              src={logo}
-              alt="Logo Clínica Veterinaria"
-              className="h-12 w-12 object-cover rounded-full border-2 border-purple-200 shadow-sm"
-            />
-            <div className="hidden sm:block">
-              <h1 className="text-lg font-bold text-gray-800 leading-tight">
-                <span className="text-purple-600">CLÍNICA</span>
-                <span className="text-gray-600"> VETERINARIA</span>
-              </h1>
-              <div className="text-indigo-700 font-semibold text-xs sm:text-sm">TU AMIGO FIEL</div>
-            </div>
-          </div>
+      {/* Header */}
+<header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md shadow-sm py-3 border-b border-gray-200">
+  <div className="max-w-6xl mx-auto px-4 flex items-center justify-between">
+    <div className="flex items-center gap-3">
+      <img
+        src={logo}
+        alt="Logo Clínica Veterinaria"
+        className="h-12 w-12 object-cover rounded-full border-2 border-purple-200 shadow-sm"
+      />
+      <div className="hidden sm:block">
+        <h1 className="text-lg font-bold text-gray-800 leading-tight">
+          <span className="text-purple-600">CLÍNICA</span>
+          <span className="text-gray-600"> VETERINARIA</span>
+        </h1>
+        <div className="text-indigo-700 font-semibold text-xs sm:text-sm">TU AMIGO FIEL</div>
+      </div>
+    </div>
 
-          {/* Desktop actions */}
-          <nav className="hidden sm:flex items-center gap-3">
-            <span className="text-sm bg-purple-100 text-purple-800 px-3 py-1 rounded-full flex items-center gap-2">
-              <PhoneIcon className="w-4 h-4" />
-              Urgencias 24h
-            </span>
-            <Link to="/login" className="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">Acceso</Link>
-          </nav>
+    {/* Desktop actions */}
+    <nav className="hidden sm:flex items-center gap-3">
+      <span className="text-sm bg-purple-100 text-purple-800 px-3 py-1 rounded-full flex items-center gap-2">
+        <PhoneIcon className="w-4 h-4" />
+        Urgencias 24h
+      </span>
+      <Link to="/login" className="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">Acceso</Link>
+    </nav>
 
-          {/* Mobile menu button */}
-          <div className="sm:hidden">
-            <button
-              onClick={() => setMobileOpen(!mobileOpen)}
-              aria-label="Abrir menú"
-              aria-expanded={mobileOpen}
-              className="p-2 rounded-md bg-gray-100 inline-flex items-center justify-center"
-            >
-              <span className="sr-only">Abrir menú</span>
-              {mobileOpen ? (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
-                </svg>
-              )}
-            </button>
-          </div>
-        </div>
+    {/* Mobile - Solo botón Acceso */}
+    <div className="sm:hidden">
+      <Link to="/login" className="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">Acceso</Link>
+    </div>
+  </div>
+</header>
 
-        {/* Mobile nav panel */}
-        {mobileOpen && (
-          <div className="sm:hidden bg-white border-t border-gray-200">
-            <div className="px-4 py-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <img src={logo} alt="logo" className="h-10 w-10 rounded-full object-cover" />
-                  <div>
-                    <div className="font-semibold">Tu Amigo Fiel</div>
-                    <div className="text-xs text-gray-500">Clínica Veterinaria</div>
-                  </div>
-                </div>
-                <div className="text-sm text-gray-600">Horario: 9:00 - 20:00</div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <Link to="/venta" className="px-3 py-2 rounded-md bg-indigo-600 text-white text-center">Ventas</Link>
-                <Link to="/Almacen" className="px-3 py-2 rounded-md bg-gray-100 text-center">Stock</Link>
-                <Link to="/cuentas" className="px-3 py-2 rounded-md bg-gray-100 text-center">Cuentas</Link>
-                <Link to="/reports" className="px-3 py-2 rounded-md bg-gray-100 text-center">Reportes</Link>
-              </div>
-
-              <div className="pt-2">
-                <Link to="/login" className="block w-full text-center px-4 py-2 rounded-md bg-indigo-600 text-white font-medium">Acceso</Link>
-              </div>
-            </div>
-          </div>
-        )}
-      </header>
-
-      {/* Main */}
+      {/* El resto de tu código se mantiene igual */}
       <main className="flex-grow max-w-6xl mx-auto px-4 py-6">
-        {/* Hero */}
+        {/* Hero section */}
         <section className="relative rounded-2xl overflow-hidden mb-8">
           <div className="w-full h-[42vh] md:h-[52vh] lg:h-[60vh] rounded-2xl overflow-hidden relative shadow-sm">
             <img
@@ -146,14 +102,12 @@ const Home = () => {
               style={{ objectPosition: 'center 30%' }}
               loading="lazy"
             />
-            {/* overlay gradient for readability */}
             <div className="absolute inset-0 bg-gradient-to-t from-gray-900/50 to-transparent" />
             <div className="absolute inset-0 flex flex-col justify-end p-5 md:p-8">
               <div className="max-w-xl text-white">
                 <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-2 drop-shadow-md">Cuidado profesional para tus mascotas</h2>
                 <p className="text-sm sm:text-base md:text-lg text-white/90">Amor, dedicación y la mejor atención médica veterinaria — gestión y ventas en local.</p>
 
-                {/* CTA group responsive */}
                 <div className="mt-4 flex flex-col sm:flex-row gap-3 items-start sm:items-center">
                   <Link to="#reserva" className="inline-flex items-center px-4 py-2 rounded-lg font-semibold bg-yellow-300 text-purple-800 shadow-sm text-sm sm:text-base">Reservar cita</Link>
                   <a href="tel:123456789" className="inline-flex items-center px-4 py-2 rounded-lg bg-white text-purple-700 text-sm sm:text-base">📞 Llamar</a>
@@ -308,7 +262,7 @@ const Home = () => {
         </div>
       </footer>
 
-      {/* Floating WhatsApp (mobile & desktop) */}
+      {/* Floating WhatsApp */}
       <a
         href="https://wa.me/5491123456789?text=Hola%20Tu%20Amigo%20Fiel"
         target="_blank"

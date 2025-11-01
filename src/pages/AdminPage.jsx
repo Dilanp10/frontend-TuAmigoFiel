@@ -285,7 +285,6 @@ export default function AdminPage() {
           <div className="lg:w-2/3 bg-white rounded-2xl shadow-md p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-extrabold text-gray-800">Panel Admin de Productos</h2>
-              <div className="text-sm text-gray-500">Gestioná productos y stock</div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">

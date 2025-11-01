@@ -10,7 +10,7 @@ const formatCurrency = (v) =>
   v == null || v === '' ? '-' : Number(v).toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 2 });
 
 const LoadingCard = () => (
-  <div className="animate-pulse bg-white rounded-2xl shadow-lg p-6 h-44" />
+  <div className="animate-pulse bg-white rounded-2xl shadow-lg p-4 h-36 sm:h-44" />
 );
 
 /* ---------- BrowseModal (Ver más) ---------- */
@@ -59,10 +59,14 @@ function BrowseModal({ type = 'product', open, onClose, onSelect }) {
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative w-full max-w-5xl mx-4 md:mx-6 bg-white rounded-2xl shadow-2xl overflow-hidden">
-        <div className="p-4 md:p-6">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-start justify-center">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden="true" />
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="relative w-full sm:max-w-5xl mx-0 sm:mx-6 bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden max-h-[85vh]"
+      >
+        <div className="p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
             <div className="flex-1 flex gap-3">
               <input
@@ -70,12 +74,13 @@ function BrowseModal({ type = 'product', open, onClose, onSelect }) {
                 onChange={(e) => setQ(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 placeholder={`Buscar ${type === 'product' ? 'productos' : 'servicios'}`}
-                className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 text-sm"
+                aria-label="Buscar ítems"
               />
-              <button onClick={handleSearch} className="px-4 py-2 bg-indigo-600 text-white rounded-lg">Buscar</button>
+              <button onClick={handleSearch} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm">Buscar</button>
             </div>
             <div className="flex items-center gap-2 ml-auto">
-              <button onClick={onClose} className="px-3 py-2 rounded-lg border">Cerrar</button>
+              <button onClick={onClose} className="px-3 py-2 rounded-lg border text-sm">Cerrar</button>
             </div>
           </div>
 
@@ -104,8 +109,8 @@ function BrowseModal({ type = 'product', open, onClose, onSelect }) {
           <div className="mt-4 flex items-center justify-between">
             <div className="text-sm text-gray-500">Página {page + 1}</div>
             <div className="flex gap-2">
-              <button disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))} className="px-3 py-1 border rounded">Anterior</button>
-              <button onClick={() => setPage((p) => p + 1)} className="px-3 py-1 border rounded">Siguiente</button>
+              <button disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))} className="px-3 py-1 border rounded text-sm">Anterior</button>
+              <button onClick={() => setPage((p) => p + 1)} className="px-3 py-1 border rounded text-sm">Siguiente</button>
             </div>
           </div>
         </div>
@@ -339,6 +344,7 @@ export default function VentasPage() {
               onClick={() => setShowSidebarMobile(s => !s)}
               className="sm:hidden px-3 py-2 bg-white border rounded-md shadow text-sm"
               aria-expanded={showSidebarMobile}
+              aria-controls="mobile-cart"
             >
               {showSidebarMobile ? 'Ocultar carrito' : 'Ver carrito'}
             </button>
@@ -392,7 +398,7 @@ export default function VentasPage() {
                 ? (mode === 'product' ? topProducts : (mode === 'service' ? topServices : [...topProducts, ...topServices])).map((it) => (
                   <div key={`${it.hasOwnProperty('stock') ? 'prod' : 'serv'}-${it.id}`} className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-shadow p-4 flex flex-col">
                     <div className="flex flex-col sm:flex-row gap-3">
-                      <div className="w-full sm:w-28 h-28 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border">
+                      <div className="w-full sm:w-28 h-28 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border shrink-0">
                         {it.imagen ? <img src={it.imagen} alt={it.nombre} className="w-full h-full object-cover" /> : <div className="text-sm text-gray-400 text-center px-2">{it.nombre.slice(0, 12)}</div>}
                       </div>
                       <div className="flex-1">
@@ -407,7 +413,7 @@ export default function VentasPage() {
 
                     <div className="mt-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 justify-end">
                       {/* cantidad input and button kept as siblings so DOM logic (previousSibling) remains intact */}
-                      <input type="number" min="1" defaultValue={1} max={it.stock || 9999} className="w-full sm:w-20 px-3 py-2 border rounded-lg" />
+                      <input type="number" min="1" defaultValue={1} max={it.stock || 9999} className="w-full sm:w-20 px-3 py-2 border rounded-lg" aria-label={`Cantidad ${it.nombre}`} />
                       <button aria-label={`Agregar ${it.nombre}`} onClick={(e) => { const v = Number(e.currentTarget.previousSibling.value || 1); if (it.stock != null && v > it.stock) { toast.error('Mayor al stock'); return; } addToCart(it, v); }} className="w-full sm:w-auto px-3 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700">Agregar</button>
                     </div>
                   </div>
@@ -416,7 +422,7 @@ export default function VentasPage() {
                   : listItems.map((it) => (
                     <div key={`${it.__type}-${it.id}`} className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-shadow p-4 flex flex-col">
                       <div className="flex flex-col sm:flex-row gap-3">
-                        <div className="w-full sm:w-28 h-28 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border">
+                        <div className="w-full sm:w-28 h-28 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border shrink-0">
                           {it.imagen ? <img src={it.imagen} alt={it.nombre} className="w-full h-full object-cover" /> : <div className="text-sm text-gray-400 text-center px-2">{it.nombre.slice(0, 12)}</div>}
                         </div>
                         <div className="flex-1">
@@ -440,8 +446,8 @@ export default function VentasPage() {
             </div>
           </div>
 
-          {/* Sidebar carrito + opciones */}
-          <aside className={`lg:col-span-1 ${showSidebarMobile ? 'block' : 'hidden lg:block'}`}>
+          {/* Sidebar carrito + opciones (desktop) */}
+          <aside className="lg:col-span-1 hidden lg:block">
             <div className="bg-white rounded-2xl shadow p-4 sticky top-4 divide-y">
               <div className="pb-3">
                 <div className="flex items-center justify-between mb-2">
@@ -515,6 +521,81 @@ export default function VentasPage() {
               </div>
             </div>
           </aside>
+        </div>
+      </div>
+
+      {/* Mobile cart as bottom sheet */}
+      <div
+        id="mobile-cart"
+        className={`fixed inset-x-0 bottom-0 z-50 sm:hidden ${showSidebarMobile ? 'translate-y-0' : 'translate-y-full'} transform transition-transform duration-300`}
+        aria-hidden={!showSidebarMobile}
+      >
+        {/* backdrop */}
+        {showSidebarMobile && <div className="absolute inset-0 bg-black/30" onClick={() => setShowSidebarMobile(false)} aria-hidden="true" />}
+        <div className="relative bg-white rounded-t-2xl shadow-xl max-h-[85vh] overflow-auto">
+          <div className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">Carrito</h3>
+                <div className="text-xs text-gray-500">{itemsCount} items • {formatCurrency(subtotal)}</div>
+              </div>
+              <button onClick={() => setShowSidebarMobile(false)} className="px-3 py-1 rounded bg-gray-100 text-sm">Cerrar</button>
+            </div>
+
+            <div className="mt-3 space-y-3">
+              <div className="mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cliente</label>
+                <select value={customerId || ''} onChange={handleCustomerChange} className="w-full px-3 py-2 border rounded-lg text-sm">
+                  <option value="">— Cliente no seleccionado —</option>
+                  {customers.map(c => <option key={c.id} value={c.id}>{c.nombre} {c.telefono ? `— ${c.telefono}` : ''}</option>)}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2 mb-2">
+                <input id="onCreditMobile" type="checkbox" checked={onCredit} onChange={(e) => setOnCredit(e.target.checked)} />
+                <label htmlFor="onCreditMobile" className="text-sm text-gray-600">Anotar a cuenta (pagar después)</label>
+              </div>
+
+              <div>
+                {cart.length === 0 ? (
+                  <div className="text-sm text-gray-500 p-3 text-center">Carrito vacío. Agregá productos o servicios.</div>
+                ) : (
+                  cart.map((i) => (
+                    <div key={i.key} className="flex items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center text-xs text-gray-400 overflow-hidden border">
+                            {i.nombre.slice(0, 1)}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-sm font-medium text-gray-800 line-clamp-1">{i.nombre}</div>
+                            <div className="text-xs text-gray-500">{i.type === 'service' ? 'Servicio' : 'Producto'}</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col items-end gap-1">
+                        <input type="number" min="1" value={i.qty} onChange={(e) => updateCartQty(i.key, e.target.value)} className="w-16 px-2 py-1 border rounded text-sm" />
+                        <div className="text-sm text-indigo-700 font-semibold whitespace-nowrap">{formatCurrency(i.precio * i.qty)}</div>
+                        <button onClick={() => removeFromCart(i.key)} className="text-red-600 text-xs">Eliminar</button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="pt-3">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-sm text-gray-600">Total</div>
+                  <div className="text-lg font-bold text-indigo-700">{formatCurrency(subtotal)}</div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <button onClick={() => setCart([])} className="w-full px-3 py-2 border rounded-lg text-sm">Vaciar</button>
+                  <button onClick={confirmSale} disabled={cart.length === 0} className="w-full px-3 py-2 bg-purple-600 text-white rounded-lg text-sm">Confirmar</button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
