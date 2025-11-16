@@ -43,8 +43,8 @@ export default function AdminPage() {
   });
 
   const [marcas, setMarcas] = useState([]);
-  const [productos, setProductos] = useState([]); // productos filtrados por categoria+marca
-  const [allProductsCache, setAllProductsCache] = useState([]); // cache global
+  const [productos, setProductos] = useState([]); 
+  const [allProductsCache, setAllProductsCache] = useState([]); 
   const [loadingMarcas, setLoadingMarcas] = useState(false);
   const [loadingProductos, setLoadingProductos] = useState(false);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
@@ -87,7 +87,7 @@ export default function AdminPage() {
       }
     })();
     return () => { mounted = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, []);
 
   // cargar marcas según categoria (filtrado local)
