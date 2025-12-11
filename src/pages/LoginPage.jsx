@@ -19,6 +19,10 @@ const LoginPage = () => {
   const [remember, setRemember] = useState(false);
   const navigate = useNavigate();
 
+  // Credenciales demo (visibles en la UI)
+  const DEMO_USER = 'admin';
+  const DEMO_PASS = '12345';
+
   useEffect(() => {
     // Si ya hay token e isAdmin en localStorage, redirigimos al admin
     const token = localStorage.getItem('token');
@@ -65,6 +69,26 @@ const LoginPage = () => {
     }
   }, []);
 
+  // Autocompletar con credenciales demo
+  const fillDemo = () => {
+    setUser(DEMO_USER);
+    setPass(DEMO_PASS);
+    setRemember(false);
+  };
+
+  // Copiar credenciales al portapapeles
+  const copyDemo = async () => {
+    try {
+      await navigator.clipboard.writeText(`Usuario: ${DEMO_USER}\nContraseña: ${DEMO_PASS}`);
+      // feedback breve
+      setError('Credenciales demo copiadas al portapapeles');
+      setTimeout(() => setError(''), 2500);
+    } catch {
+      setError('No se pudo copiar al portapapeles');
+      setTimeout(() => setError(''), 2500);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-8 px-4 sm:px-6 lg:px-8 flex items-start sm:items-center">
       {/* Small component styles */}
@@ -103,7 +127,7 @@ const LoginPage = () => {
             <span className="text-indigo-600">Iniciar</span> Sesión
           </h2>
 
-          {/* Error */}
+          {/* Error / feedback */}
           {error && (
             <div
               role="alert"
@@ -178,7 +202,7 @@ const LoginPage = () => {
                 <span className="text-gray-600">Recordarme</span>
               </label>
 
-              <Link to="/forgot" className="text-indigo-600 hover:underline">
+              <Link to="/login" className="text-indigo-600 hover:underline">
                 ¿Olvidaste la contraseña?
               </Link>
             </div>
@@ -211,6 +235,40 @@ const LoginPage = () => {
           <p className="mt-4 text-xs text-gray-500 text-center">
             Si sos administrador y no podés entrar, revisá las variables de entorno en el backend.
           </p>
+
+          {/* --- Demo credentials card --- */}
+          <div className="mt-6 border border-dashed border-gray-200 rounded-lg p-3 bg-gray-50">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs text-gray-600">Demo (credenciales de acceso)</div>
+                <div className="mt-1 font-mono text-sm text-gray-800">
+                  Usuario: <span className="font-semibold">{DEMO_USER}</span><br />
+                  Contraseña: <span className="font-semibold">{DEMO_PASS}</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-end gap-2">
+                <button
+                  onClick={fillDemo}
+                  className="px-3 py-1 bg-indigo-600 text-white rounded-md text-sm hover:bg-indigo-700 transition"
+                  aria-label="Rellenar credenciales de demo"
+                >
+                  Usar demo
+                </button>
+                <button
+                  onClick={copyDemo}
+                  className="px-3 py-1 border border-gray-300 rounded-md text-sm hover:bg-gray-100 transition"
+                  aria-label="Copiar credenciales de demo"
+                >
+                  Copiar
+                </button>
+              </div>
+            </div>
+            <div className="mt-2 text-xs text-gray-500">
+              Podés usar el botón <span className="font-medium">Usar demo</span> para autocompletar el formulario.
+            </div>
+          </div>
+          {/* --- end demo card --- */}
         </div>
 
         {/* Bottom note */}
